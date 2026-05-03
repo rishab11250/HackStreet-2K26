@@ -1,4 +1,3 @@
-import React from 'react';
 
 const ToolButton = ({ icon: Icon, name, shortcut, active, onClick, tooltipSide = 'right' }) => {
   return (

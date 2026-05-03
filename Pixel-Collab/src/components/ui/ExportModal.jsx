@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Image as ImageIcon, FileText, Download, Check } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { exportCanvas } from '../../utils/exportCanvas';

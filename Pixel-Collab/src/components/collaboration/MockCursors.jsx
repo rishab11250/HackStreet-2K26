@@ -1,9 +1,7 @@
-import React from 'react';
 import useStore from '../../store/useStore';
 
 const MockCursors = () => {
   const mockUsers = useStore((state) => state.mockUsers);
-  const viewport = useStore((state) => state.viewport);
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[999] overflow-hidden">
