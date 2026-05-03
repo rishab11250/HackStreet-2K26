@@ -3,6 +3,7 @@ const KEYS = {
   theme: 'pixel-collab:theme',
   gridSnap: 'pixel-collab:grid-snap-size',
   presentation: 'pixel-collab:presentation',
+  snapPeers: 'pixel-collab:snap-align-peers',
 };
 
 export function loadStoredMembers() {
@@ -67,6 +68,25 @@ export function loadPresentationFlag() {
 export function savePresentationFlag(on) {
   try {
     sessionStorage.setItem(KEYS.presentation, on ? '1' : '0');
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Default ON: magnetically align dragged selection to sibling elements. */
+export function loadSnapAlignPeers() {
+  try {
+    const v = sessionStorage.getItem(KEYS.snapPeers);
+    if (v == null) return true;
+    return v === '1';
+  } catch {
+    return true;
+  }
+}
+
+export function saveSnapAlignPeers(enabled) {
+  try {
+    sessionStorage.setItem(KEYS.snapPeers, enabled ? '1' : '0');
   } catch {
     /* ignore */
   }

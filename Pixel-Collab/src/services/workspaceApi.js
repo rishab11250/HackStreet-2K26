@@ -10,6 +10,24 @@ const SIMULATED_LATENCY_MS = 180;
 const delay = (ms = SIMULATED_LATENCY_MS) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
+const MEMBER_PALETTE = [
+  '#F05B5B',
+  '#5BF0A0',
+  '#F0D25B',
+  '#5B6AF0',
+  '#F0A05B',
+  '#AB47BC',
+  '#26A69A',
+  '#FF7043',
+];
+
+function pickInviteColor(seed) {
+  const s = String(seed ?? '');
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return MEMBER_PALETTE[h % MEMBER_PALETTE.length];
+}
+
 /** Mock directory for "invite" search */
 export const MOCK_DIRECTORY = [
   { id: 'dir-1', name: 'Jordan Lee', email: 'jordan@example.com', role: 'editor' },
@@ -55,7 +73,7 @@ export async function inviteMember(member) {
     name: member.name.trim(),
     email: member.email || '',
     role: member.role || 'editor',
-    color: member.color || '#5B6AF0',
+    color: member.color || pickInviteColor(member.email || member.name.trim()),
     initials,
     online: true,
   };

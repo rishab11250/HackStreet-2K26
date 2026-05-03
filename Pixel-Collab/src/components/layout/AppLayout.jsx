@@ -6,7 +6,6 @@ import RightPanel from './RightPanel';
 import StickyNote from '../elements/StickyNote';
 import ExportModal from '../ui/ExportModal';
 import TypingIndicator from '../collaboration/TypingIndicator';
-import MockCursors from '../collaboration/MockCursors';
 
 const AppLayout = ({ children }) => {
   const elements = useStore((state) => state.elements);
@@ -38,7 +37,6 @@ const AppLayout = ({ children }) => {
 
           {!presentationMode && <BottomOptions />}
           {!presentationMode && <ExportModal />}
-          {!presentationMode && <MockCursors />}
         </main>
 
         {!presentationMode && <RightPanel />}

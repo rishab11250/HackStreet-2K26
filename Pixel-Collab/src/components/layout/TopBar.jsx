@@ -2,6 +2,7 @@ import { Share2, Download, Menu, Sun, Moon, Monitor } from 'lucide-react';
 import useStore from '../../store/useStore';
 import AvatarRow from '../collaboration/AvatarRow';
 import ZoomControls from '../ui/ZoomControls';
+import CurrentUserProfile from './CurrentUserProfile';
 import { serializeBoard } from '../../utils/persistence';
 
 const TopBar = () => {
@@ -42,6 +43,10 @@ const TopBar = () => {
         <div className="h-6 w-[1px] bg-[var(--color-border)] mx-1 hidden sm:block" />
 
         <ZoomControls />
+
+        <div className="h-6 w-[1px] bg-[var(--color-border)] mx-1 hidden sm:block" />
+
+        <CurrentUserProfile />
 
         <div className="h-6 w-[1px] bg-[var(--color-border)] mx-1 hidden sm:block" />
 
