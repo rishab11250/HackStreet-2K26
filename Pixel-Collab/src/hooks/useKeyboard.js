@@ -8,6 +8,7 @@ export const useKeyboard = () => {
     redo, 
     setActiveTool, 
     deleteElements, 
+    duplicateElements,
     selectedIds, 
     clearSelection,
     toggleGrid,
@@ -29,6 +30,14 @@ export const useKeyboard = () => {
       if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') || ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
         e.preventDefault();
         redo();
+      }
+
+      // Duplicate: Ctrl/Cmd + D
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        if (selectedIds.length > 0) {
+          duplicateElements(selectedIds);
+        }
       }
 
       // Tool Shortcuts
@@ -55,5 +64,5 @@ export const useKeyboard = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, setActiveTool, deleteElements, selectedIds, clearSelection, toggleGrid, toggleActivityFeed]);
+  }, [undo, redo, setActiveTool, deleteElements, duplicateElements, selectedIds, clearSelection, toggleGrid, toggleActivityFeed]);
 };

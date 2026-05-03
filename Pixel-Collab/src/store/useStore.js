@@ -19,6 +19,34 @@ const useStore = create((set, get) => ({
     selectedIds: state.selectedIds.filter((id) => !ids.includes(id))
   })),
 
+  duplicateElements: (ids) => set((state) => {
+    if (ids.length === 0) return state;
+    const newElements = [];
+    const newSelectedIds = [];
+    
+    ids.forEach(id => {
+      const el = state.elements.find(e => e.id === id);
+      if (el) {
+        const newId = Math.random().toString(36).substr(2, 9);
+        const duplicated = {
+          ...JSON.parse(JSON.stringify(el)),
+          id: newId,
+          x: el.x + 20,
+          y: el.y + 20,
+          zIndex: Date.now(),
+          createdAt: Date.now()
+        };
+        newElements.push(duplicated);
+        newSelectedIds.push(newId);
+      }
+    });
+    
+    return {
+      elements: [...state.elements, ...newElements],
+      selectedIds: newSelectedIds
+    };
+  }),
+
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   clearSelection: () => set({ selectedIds: [] }),
 

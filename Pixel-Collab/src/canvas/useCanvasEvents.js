@@ -7,6 +7,7 @@ import { ShapeTool } from '../tools/ShapeTool';
 import { TextTool } from '../tools/TextTool';
 import { EraserTool } from '../tools/EraserTool';
 import { SelectTool } from '../tools/SelectTool';
+import { StickyNoteTool } from '../tools/StickyNoteTool';
 
 const useCanvasEvents = (containerRef) => {
   const {
@@ -92,6 +93,10 @@ const useCanvasEvents = (containerRef) => {
       }
       case TOOLS.TEXT: {
         TextTool.onClick(e, toolArgs);
+        break;
+      }
+      case TOOLS.STICKY: {
+        StickyNoteTool.onClick(e, toolArgs);
         break;
       }
       case TOOLS.ERASER: {
