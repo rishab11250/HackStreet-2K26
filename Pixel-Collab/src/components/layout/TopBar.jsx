@@ -1,7 +1,6 @@
+import React from 'react';
 import { Share2, Download, ZoomIn, ZoomOut, Menu } from 'lucide-react';
 import useStore from '../../store/useStore';
-
-import AvatarRow from '../collaboration/AvatarRow';
 
 const TopBar = () => {
   const { 
@@ -17,7 +16,7 @@ const TopBar = () => {
   const zoomPercent = Math.round(viewport.zoom * 100);
 
   return (
-    <header className="h-[52px] bg-white border-b border-[var(--color-border)] px-4 flex items-center justify-between z-30 shadow-[var(--shadow-sm)]">
+    <header className="h-[52px] bg-white border-b border-[var(--color-border)] px-4 flex items-center justify-between z-30 shadow-sm">
       {/* Left section: Logo */}
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 bg-[var(--color-primary)] rounded-lg flex items-center justify-center text-white font-bold">C</div>
@@ -31,10 +30,6 @@ const TopBar = () => {
 
       {/* Right section: Controls */}
       <div className="flex items-center gap-2 sm:gap-4">
-        <AvatarRow />
-
-        <div className="h-6 w-[1px] bg-[var(--color-border)] mx-1 hidden sm:block" />
-
         {/* Zoom Controls */}
         <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-md border border-gray-100">
           <button onClick={zoomOut} className="p-1 hover:bg-white rounded transition-colors text-gray-600">
