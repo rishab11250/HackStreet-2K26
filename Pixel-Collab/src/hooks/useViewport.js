@@ -39,12 +39,22 @@ const useViewport = () => {
     y: canvasY * viewport.zoom + viewport.y,
   }), [viewport]);
 
+  const getRelativeCoords = useCallback((clientX, clientY, containerRef) => {
+    if (!containerRef.current) return { x: clientX, y: clientY };
+    const rect = containerRef.current.getBoundingClientRect();
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
+  }, []);
+
   return {
     viewport,
     handleZoom,
     handlePan,
     toCanvas,
     toScreen,
+    getRelativeCoords,
   };
 };
 

@@ -1,20 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import useStore from '../store/useStore';
-import useViewport from '../hooks/useViewport';
 import GridBackground from './GridBackground';
 import { renderAll } from './CanvasRenderer';
-import { TOOLS } from '../store/constants';
+import useCanvasEvents from './useCanvasEvents';
+import TextInput from '../components/elements/TextInput';
 
 const WhiteboardCanvas = () => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const { elements, activeTool } = useStore();
-  const { viewport, handleZoom, handlePan } = useViewport();
-  const [isPanning, setIsPanning] = useState(false);
-  const [spacePressed, setSpacePressed] = useState(false);
-  const lastMousePos = useRef({ x: 0, y: 0 });
+  const { elements, viewport } = useStore();
+  
+  const {
+    liveElement,
+    onMouseDown,
+    onMouseMove,
+    onMouseUp,
+    onWheel,
+    isPanning
+  } = useCanvasEvents(containerRef);
 
-  // Space key for panning
+  const [spacePressed, setSpacePressed] = useState(false);
+
+  // Space key for panning detection (passed to onMouseDown via event state)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === 'Space' && !e.repeat) {
@@ -34,7 +41,7 @@ const WhiteboardCanvas = () => {
     };
   }, []);
 
-  // Handle resize
+  // Handle resize and render
   useEffect(() => {
     const updateCanvasSize = () => {
       if (!canvasRef.current || !containerRef.current) return;
@@ -48,7 +55,7 @@ const WhiteboardCanvas = () => {
       const ctx = canvasRef.current.getContext('2d');
       ctx.scale(dpr, dpr);
       
-      renderAll(ctx, elements, viewport);
+      renderAll(ctx, elements, viewport, liveElement);
     };
 
     const resizeObserver = new ResizeObserver(updateCanvasSize);
@@ -58,47 +65,28 @@ const WhiteboardCanvas = () => {
 
     updateCanvasSize();
     return () => resizeObserver.disconnect();
-  }, [elements, viewport]);
+  }, [elements, viewport, liveElement]);
 
-  // Render loop
+  // Regular render call
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    renderAll(ctx, elements, viewport);
-  }, [elements, viewport]);
+    renderAll(ctx, elements, viewport, liveElement);
+  }, [elements, viewport, liveElement]);
 
-  // Mouse events for pan/zoom
-  const onWheel = (e) => {
-    handleZoom(e, containerRef);
-  };
-
-  const onMouseDown = (e) => {
-    if (activeTool === TOOLS.PAN || e.button === 1 || (e.button === 0 && spacePressed)) {
-      setIsPanning(true);
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
-    }
-  };
-
-  const onMouseMove = (e) => {
-    if (isPanning) {
-      const dx = e.clientX - lastMousePos.current.x;
-      const dy = e.clientY - lastMousePos.current.y;
-      handlePan(dx, dy);
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
-    }
-  };
-
-  const onMouseUp = () => {
-    setIsPanning(false);
+  const handleMouseDown = (e) => {
+    // Inject spacePressed into event for useCanvasEvents
+    e.spaceKey = spacePressed;
+    onMouseDown(e);
   };
 
   return (
     <div 
       ref={containerRef} 
-      className="relative w-full h-full bg-[#F8F9FB] overflow-hidden"
+      className={`relative w-full h-full bg-[#F8F9FB] overflow-hidden ${isPanning || spacePressed ? 'cursor-grabbing' : 'cursor-crosshair'}`}
       onWheel={onWheel}
-      onMouseDown={onMouseDown}
+      onMouseDown={handleMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
@@ -109,6 +97,7 @@ const WhiteboardCanvas = () => {
         className="absolute inset-0 touch-none"
         style={{ width: '100%', height: '100%' }}
       />
+      <TextInput />
     </div>
   );
 };

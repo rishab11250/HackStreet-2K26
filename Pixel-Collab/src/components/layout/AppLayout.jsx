@@ -1,4 +1,3 @@
-import React from 'react';
 import useStore from '../../store/useStore';
 import TopBar from './TopBar';
 import LeftToolbar from '../toolbar/LeftToolbar';
