@@ -22,36 +22,40 @@ const useStore = create((set, get) => ({
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   clearSelection: () => set({ selectedIds: [] }),
 
-  // Z-ORDER ACTIONS
-  bringForward: (id) => set((state) => {
-    const idx = state.elements.findIndex(el => el.id === id);
-    if (idx === -1 || idx === state.elements.length - 1) return state;
+  bringForward: (ids) => set((state) => {
     const newElements = [...state.elements];
-    [newElements[idx], newElements[idx + 1]] = [newElements[idx + 1], newElements[idx]];
+    ids.forEach(id => {
+      const idx = newElements.findIndex(el => el.id === id);
+      if (idx !== -1 && idx < newElements.length - 1) {
+        [newElements[idx], newElements[idx + 1]] = [newElements[idx + 1], newElements[idx]];
+      }
+    });
     return { elements: newElements };
   }),
 
-  sendBackward: (id) => set((state) => {
-    const idx = state.elements.findIndex(el => el.id === id);
-    if (idx <= 0) return state;
+  sendBackward: (ids) => set((state) => {
     const newElements = [...state.elements];
-    [newElements[idx], newElements[idx - 1]] = [newElements[idx - 1], newElements[idx]];
+    ids.forEach(id => {
+      const idx = newElements.findIndex(el => el.id === id);
+      if (idx > 0) {
+        [newElements[idx], newElements[idx - 1]] = [newElements[idx - 1], newElements[idx]];
+      }
+    });
     return { elements: newElements };
   }),
 
-  bringToFront: (id) => set((state) => {
-    const element = state.elements.find(el => el.id === id);
-    if (!element) return state;
-    const otherElements = state.elements.filter(el => el.id !== id);
-    return { elements: [...otherElements, element] };
+  bringToFront: (ids) => set((state) => {
+    const selected = state.elements.filter(el => ids.includes(el.id));
+    const unselected = state.elements.filter(el => !ids.includes(el.id));
+    return { elements: [...unselected, ...selected] };
   }),
 
-  sendToBack: (id) => set((state) => {
-    const element = state.elements.find(el => el.id === id);
-    if (!element) return state;
-    const otherElements = state.elements.filter(el => el.id !== id);
-    return { elements: [element, ...otherElements] };
+  sendToBack: (ids) => set((state) => {
+    const selected = state.elements.filter(el => ids.includes(el.id));
+    const unselected = state.elements.filter(el => !ids.includes(el.id));
+    return { elements: [...selected, ...unselected] };
   }),
+
 
   // ACTIVE TOOL
   activeTool: TOOLS.SELECT,

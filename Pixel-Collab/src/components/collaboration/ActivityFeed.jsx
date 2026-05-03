@@ -1,11 +1,17 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import useStore from '../../store/useStore';
 
 const ActivityFeed = () => {
   const activityLog = useStore((state) => state.activityLog);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const formatTime = (ts) => {
-    const diff = Math.floor((Date.now() - ts) / 1000);
+    const diff = Math.floor((now - ts) / 1000);
     if (diff < 60) return 'just now';
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     return `${Math.floor(diff / 3600)}h ago`;

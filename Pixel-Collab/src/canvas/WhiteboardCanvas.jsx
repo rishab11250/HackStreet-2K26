@@ -4,6 +4,7 @@ import GridBackground from './GridBackground';
 import { renderAll } from './CanvasRenderer';
 import useCanvasEvents from './useCanvasEvents';
 import TextInput from '../components/elements/TextInput';
+import SelectionOverlay from './SelectionOverlay';
 
 const WhiteboardCanvas = () => {
   const canvasRef = useRef(null);
@@ -98,6 +99,7 @@ const WhiteboardCanvas = () => {
         style={{ width: '100%', height: '100%' }}
       />
       <TextInput />
+      <SelectionOverlay />
     </div>
   );
 };
