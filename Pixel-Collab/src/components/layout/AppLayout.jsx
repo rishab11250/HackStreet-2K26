@@ -3,10 +3,12 @@ import useStore from '../../store/useStore';
 import TopBar from './TopBar';
 import LeftToolbar from '../toolbar/LeftToolbar';
 import BottomOptions from '../toolbar/BottomOptions';
-import ActivityFeed from '../collaboration/ActivityFeed';
+import RightPanel from './RightPanel';
+import StickyNote from '../elements/StickyNote';
 
 const AppLayout = ({ children }) => {
-  const showActivityFeed = useStore((state) => state.showActivityFeed);
+  const elements = useStore((state) => state.elements);
+  const stickyNotes = elements.filter(el => el.type === 'sticky');
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-[var(--color-canvas-bg)]">
@@ -16,22 +18,20 @@ const AppLayout = ({ children }) => {
         
         <main className="flex-1 relative overflow-hidden h-full">
           {children}
+
+          {/* Sticky Notes Layer */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {stickyNotes.map(note => (
+              <div key={note.id} className="pointer-events-auto">
+                <StickyNote element={note} />
+              </div>
+            ))}
+          </div>
+
           <BottomOptions />
         </main>
 
-        {/* Right Panel */}
-        <div 
-          className={`h-full bg-white border-l border-[var(--color-border)] transition-all duration-300 ease-in-out overflow-hidden shadow-xl z-20 ${
-            showActivityFeed ? 'w-[280px]' : 'w-0 border-l-0'
-          }`}
-        >
-          <div className="w-[280px] p-4 h-full flex flex-col">
-            <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4 border-b border-gray-100 pb-2">Activity Feed</h2>
-            <div className="flex-1 overflow-hidden">
-              <ActivityFeed />
-            </div>
-          </div>
-        </div>
+        <RightPanel />
       </div>
     </div>
   );
