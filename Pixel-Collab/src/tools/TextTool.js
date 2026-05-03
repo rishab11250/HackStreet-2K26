@@ -11,7 +11,7 @@ export const TextTool = {
       type: 'text',
       x,
       y,
-      content: '',
+      content: 'New Text',
       fontSize,
       fontWeight,
       strokeColor, // text color uses strokeColor
