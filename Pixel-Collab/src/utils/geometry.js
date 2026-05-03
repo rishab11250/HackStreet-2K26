@@ -14,28 +14,46 @@ const estimateTextWidthHeight = (el) => {
   return { width: w, height: h };
 };
 
+function initialsFromName(name) {
+  const s = String(name ?? '').trim();
+  if (!s) return '?';
+  return s
+    .split(/\s+/)
+    .map((p) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+export { initialsFromName };
+
 export const getElementBounds = (el) => {
   if (el.type === 'freehand') {
-    const points = el.points;
-    if (!points.length) return { x: el.x, y: el.y, width: 0, height: 0 };
-    
+    // Match on-canvas rendering: smoothed path can extend beyond raw points; stroke adds visual padding.
+    const raw = el.points;
+    const smooth = el.smoothPoints;
+    const points =
+      Array.isArray(smooth) && smooth.length >= 2 ? smooth : Array.isArray(raw) && raw.length ? raw : null;
+    if (!points?.length) return { x: el.x, y: el.y, width: 0, height: 0 };
+
     let minX = points[0][0];
     let maxX = points[0][0];
     let minY = points[0][1];
     let maxY = points[0][1];
-    
+
     for (let i = 1; i < points.length; i++) {
       minX = Math.min(minX, points[i][0]);
       maxX = Math.max(maxX, points[i][0]);
       minY = Math.min(minY, points[i][1]);
       maxY = Math.max(maxY, points[i][1]);
     }
-    
+
+    const sw = (el.strokeWidth ?? 2) / 2;
     return {
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY
+      x: minX - sw,
+      y: minY - sw,
+      width: Math.max(maxX - minX, 0) + 2 * sw,
+      height: Math.max(maxY - minY, 0) + 2 * sw,
     };
   }
 
@@ -83,13 +101,15 @@ export const isPointInElement = (x, y, el) => {
 
 export const isElementInBox = (el, boxX, boxY, boxWidth, boxHeight) => {
   const bounds = getElementBounds(el);
-  
+
   // Normalized box coordinates
   const minBoxX = Math.min(boxX, boxX + boxWidth);
   const maxBoxX = Math.max(boxX, boxX + boxWidth);
   const minBoxY = Math.min(boxY, boxY + boxHeight);
   const maxBoxY = Math.max(boxY, boxY + boxHeight);
-  
+
+  // Text elements might not have explicit width/height in the store yet
+  // but getElementBounds provides estimates
   return (
     bounds.x >= minBoxX &&
     bounds.x + bounds.width <= maxBoxX &&

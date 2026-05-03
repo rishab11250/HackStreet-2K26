@@ -10,6 +10,12 @@ import { SelectTool } from '../tools/SelectTool';
 import { StickyNoteTool } from '../tools/StickyNoteTool';
 import { PanTool } from '../tools/PanTool';
 import { isPointInElement } from '../utils/geometry';
+import {
+  computePeerSnap,
+  collectPeersAABBs,
+  selectionAABAtStart,
+  SNAP_PEER_SCREEN_DEFAULT,
+} from '../utils/snapAlignment';
 
 const useCanvasEvents = (containerRef) => {
   const {
@@ -106,7 +112,19 @@ const useCanvasEvents = (containerRef) => {
     switch (activeTool) {
       case TOOLS.SELECT: {
         const state = SelectTool.onMouseDown(e, toolArgs);
-        setSelectionState(state);
+        if (state?.type === 'move') {
+          const ids = useStore.getState().selectedIds;
+          const initialBBox = selectionAABAtStart(elements, ids);
+          setSelectionState({
+            ...state,
+            initialBBox,
+            movingIds: [...ids],
+            peerSnapGuides: [],
+            peerSnapActive: false,
+          });
+        } else {
+          setSelectionState(state);
+        }
         setIsDrawing(true);
         break;
       }
@@ -255,8 +273,41 @@ const useCanvasEvents = (containerRef) => {
           setSelectedIds(inBoxIds);
           setSelectionState(newState);
         } else {
-          const newState = SelectTool.onMouseMove(e, toolArgs);
-          setSelectionState(newState);
+          const rawState = SelectTool.onMouseMove(e, toolArgs);
+          const snapPeersOn = useStore.getState().snapAlignPeers && !snapSuppressRef.current;
+
+          if (rawState?.type === 'move' && rawState.initialBBox != null && snapPeersOn) {
+            const movingIds =
+              rawState.movingIds && rawState.movingIds.length > 0
+                ? rawState.movingIds
+                : useStore.getState().selectedIds;
+            const peers = collectPeersAABBs(elements, movingIds);
+            const thr =
+              SNAP_PEER_SCREEN_DEFAULT / Math.max(viewport.zoom, 0.08);
+            const sn = computePeerSnap(
+              rawState.dx ?? 0,
+              rawState.dy ?? 0,
+              rawState.initialBBox,
+              peers,
+              thr
+            );
+            setSelectionState({
+              ...rawState,
+              dx: sn.dx,
+              dy: sn.dy,
+              peerSnapActive: sn.peerSnapActive,
+              peerSnapGuides: sn.peerSnapGuides,
+              movingIds,
+            });
+          } else if (rawState?.type === 'move') {
+            setSelectionState({
+              ...rawState,
+              peerSnapGuides: [],
+              peerSnapActive: false,
+            });
+          } else {
+            setSelectionState(rawState);
+          }
         }
         break;
       }
@@ -294,8 +345,10 @@ const useCanvasEvents = (containerRef) => {
     if (!isDrawing) return;
 
     if (resizeState) {
+      const elLabel = resizeState.initialElement?.type ?? 'element';
       if (!resizeState.initialElement?.locked) {
         pushHistory();
+        useStore.getState().logActivity(`resized ${elLabel}`, { kind: 'resize' });
       }
       setResizeState(null);
       setIsDrawing(false);
@@ -314,6 +367,7 @@ const useCanvasEvents = (containerRef) => {
       setViewport,
       snapToGrid,
       gridSnapSize,
+      peerSnapConsumed: !!selectionState?.peerSnapActive,
     };
 
     switch (activeTool) {

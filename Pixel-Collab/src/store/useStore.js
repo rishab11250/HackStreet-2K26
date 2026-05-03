@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { nanoid } from 'nanoid';
 import { TOOLS, SHAPES } from './constants';
 import { clampGridSize } from '../utils/snap';
+import { initialsFromName } from '../utils/geometry';
 import {
   loadStoredMembers,
   saveMembersToStorage,
@@ -11,6 +12,8 @@ import {
   saveGridSnapSize,
   loadPresentationFlag,
   savePresentationFlag,
+  loadSnapAlignPeers,
+  saveSnapAlignPeers,
 } from '../utils/workspaceStorage';
 
 const defaultMembersSeed = () => [
@@ -32,9 +35,37 @@ function activityFromState(state, action, extra = {}) {
   };
 }
 
+/**
+ * Synthetic collaborator cursors: one entry per workspace member except the current user.
+ * Preserves positions when IDs stay the same.
+ */
+export function buildCollaboratorMockUsers(members, currentUserId, previous = []) {
+  const prevMap = new Map(previous.map((u) => [u.id, u]));
+  const others = members.filter((m) => m.id !== currentUserId && m.online !== false);
+  return others.map((m, i) => {
+    const prev = prevMap.get(m.id);
+    return {
+      id: m.id,
+      name: m.name,
+      color: m.color || '#5B6AF0',
+      initials: m.initials ?? m.name?.slice(0, 2).toUpperCase() ?? '?',
+      cursor:
+        prev?.cursor ??
+        ({ x: 260 + i * 150, y: 190 + i * 85 }),
+    };
+  });
+}
+
 const storedMembers = loadStoredMembers();
 const workspaceMembers =
   Array.isArray(storedMembers) && storedMembers.length > 0 ? storedMembers : defaultMembersSeed();
+
+const initialCurrentUserId = workspaceMembers[0]?.id ?? 'u1';
+const initialCollaboratorMocks = buildCollaboratorMockUsers(
+  workspaceMembers,
+  initialCurrentUserId,
+  []
+);
 
 const useStore = create((set, get) => ({
   // ELEMENTS
@@ -210,8 +241,13 @@ const useStore = create((set, get) => ({
 
   // GRID / SNAP
   snapToGrid: true,
+  snapAlignPeers: loadSnapAlignPeers(),
   gridSnapSize: clampGridSize(loadGridSnapSize() ?? 20),
   setSnapToGrid: (v) => set({ snapToGrid: !!v }),
+  setSnapAlignPeers: (v) => {
+    saveSnapAlignPeers(!!v);
+    set({ snapAlignPeers: !!v });
+  },
   setGridSnapSize: (n) => {
     const g = clampGridSize(n);
     saveGridSnapSize(g);
@@ -220,7 +256,10 @@ const useStore = create((set, get) => ({
 
   // VIEWPORT
   viewport: { x: 0, y: 0, zoom: 1 },
-  setViewport: (vp) => set({ viewport: vp }),
+  setViewport: (vpOrFn) =>
+    set((state) => ({
+      viewport: typeof vpOrFn === 'function' ? vpOrFn(state.viewport) : vpOrFn,
+    })),
 
   zoomIn: () =>
     set((state) => ({
@@ -309,14 +348,58 @@ const useStore = create((set, get) => ({
     set({ themeMode: mode });
   },
 
-  // WORKSPACE / MEMBERS (mockUsers replaced for UI; cursors still use member colors)
-  currentUserId: workspaceMembers[0]?.id ?? 'u1',
+  // WORKSPACE / MEMBERS — collaborator mock cursors mirror workspace (excluding current user)
+  currentUserId: initialCurrentUserId,
   workspaceMembers,
-  setCurrentUserId: (id) => set({ currentUserId: id }),
+  mockUsers: initialCollaboratorMocks,
+
+  reconcileCollaboratorMocks: () =>
+    set((state) => ({
+      mockUsers: buildCollaboratorMockUsers(
+        state.workspaceMembers,
+        state.currentUserId,
+        state.mockUsers
+      ),
+    })),
+
+  setCurrentUserId: (id) =>
+    set((state) => ({
+      currentUserId: id,
+      mockUsers: buildCollaboratorMockUsers(state.workspaceMembers, id, state.mockUsers),
+    })),
+
+  /** Update the signed-in user's display name (persisted with workspace members). */
+  updateCurrentUserProfile: ({ name }) => {
+    const trimmed = typeof name === 'string' ? name.trim() : '';
+    if (!trimmed) return;
+    set((state) => {
+      const id = state.currentUserId;
+      let changed = false;
+      const next = state.workspaceMembers.map((m) => {
+        if (m.id !== id) return m;
+        if (m.name === trimmed && m.initials === initialsFromName(trimmed)) return m;
+        changed = true;
+        return { ...m, name: trimmed, initials: initialsFromName(trimmed) };
+      });
+      if (!changed) return state;
+      saveMembersToStorage(next);
+      return {
+        workspaceMembers: next,
+        mockUsers: buildCollaboratorMockUsers(next, id, state.mockUsers),
+        activityLog: [
+          activityFromState(state, `updated display name to ${trimmed}`, { kind: 'profile' }),
+          ...state.activityLog,
+        ].slice(0, 60),
+      };
+    });
+  },
 
   setWorkspaceMembers: (members) => {
     saveMembersToStorage(members);
-    set({ workspaceMembers: members });
+    set((state) => ({
+      workspaceMembers: members,
+      mockUsers: buildCollaboratorMockUsers(members, state.currentUserId, state.mockUsers),
+    }));
   },
 
   addWorkspaceMember: (member) =>
@@ -325,6 +408,7 @@ const useStore = create((set, get) => ({
       saveMembersToStorage(next);
       return {
         workspaceMembers: next,
+        mockUsers: buildCollaboratorMockUsers(next, state.currentUserId, state.mockUsers),
         activityLog: [
           activityFromState(state, `invited ${member.name} (${member.role})`, { kind: 'member' }),
           ...state.activityLog,
@@ -338,6 +422,7 @@ const useStore = create((set, get) => ({
       saveMembersToStorage(next);
       return {
         workspaceMembers: next,
+        mockUsers: buildCollaboratorMockUsers(next, state.currentUserId, state.mockUsers),
         activityLog: [
           activityFromState(state, `updated member role to ${role}`, { kind: 'member', memberId }),
           ...state.activityLog,
@@ -352,6 +437,7 @@ const useStore = create((set, get) => ({
       saveMembersToStorage(next);
       return {
         workspaceMembers: next,
+        mockUsers: buildCollaboratorMockUsers(next, state.currentUserId, state.mockUsers),
         activityLog: [
           activityFromState(state, `removed a member from the workspace`, { kind: 'member' }),
           ...state.activityLog,
@@ -359,22 +445,18 @@ const useStore = create((set, get) => ({
       };
     }),
 
-  // Legacy mock cursor users — keep for MockCursors demo positions
-  mockUsers: [
-    { id: 'u1', name: 'Alex', color: '#F05B5B', initials: 'AL', cursor: { x: 300, y: 200 } },
-    { id: 'u2', name: 'Sara', color: '#5BF0A0', initials: 'SA', cursor: { x: 600, y: 400 } },
-    { id: 'u3', name: 'Dev', color: '#F0D25B', initials: 'DV', cursor: { x: 900, y: 300 } },
-  ],
   updateMockCursor: (userId, pos) =>
     set((state) => ({
       mockUsers: state.mockUsers.map((u) => (u.id === userId ? { ...u, cursor: pos } : u)),
     })),
 
   activityLog: [],
-  addActivityEvent: (event) =>
+  addActivityEvent: (event) => {
+    if (!event || !event.action) return;
     set((state) => ({
       activityLog: [{ ...event, id: event.id || nanoid(10) }, ...state.activityLog].slice(0, 60),
-    })),
+    }));
+  },
 }));
 
 export default useStore;

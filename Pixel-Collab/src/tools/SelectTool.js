@@ -71,14 +71,15 @@ export const SelectTool = {
     return state;
   },
 
-  onMouseUp: (state, { pushHistory, updateElement, selectedIds, elements, snapToGrid, gridSnapSize }) => {
+  onMouseUp: (state, { pushHistory, updateElement, selectedIds, elements, snapToGrid, gridSnapSize, peerSnapConsumed = false }) => {
     if (!state) return null;
     
     const dx = state.dx ?? 0;
     const dy = state.dy ?? 0;
     if (state.type === 'move' && (dx !== 0 || dy !== 0)) {
       pushHistory();
-      const grid = snapToGrid && gridSnapSize > 0 ? gridSnapSize : 0;
+      const useGridSnap = snapToGrid && gridSnapSize > 0 && !peerSnapConsumed;
+      const grid = useGridSnap ? gridSnapSize : 0;
       selectedIds.forEach(id => {
         const el = elements.find(e => e.id === id);
         if (!el || el.locked) return;

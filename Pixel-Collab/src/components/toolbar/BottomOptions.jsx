@@ -43,6 +43,8 @@ const BottomOptions = () => {
     presentationMode,
     snapToGrid,
     setSnapToGrid,
+    snapAlignPeers,
+    setSnapAlignPeers,
     gridSnapSize,
     setGridSnapSize,
     toggleLockSelected,
@@ -214,8 +216,11 @@ const BottomOptions = () => {
 
       {!isEraserTool && (
         <>
-          <div className="flex items-center gap-2 px-2">
-            <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-text-muted)] cursor-pointer select-none">
+          <div className="flex items-center gap-2 px-2 flex-wrap">
+            <label
+              className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-text-muted)] cursor-pointer select-none"
+              title="Snap moved items to grid (after drag)."
+            >
               <input
                 type="checkbox"
                 checked={snapToGrid}
@@ -224,6 +229,18 @@ const BottomOptions = () => {
               />
               Snap
             </label>
+            <label
+              className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-text-muted)] cursor-pointer select-none"
+              title="While dragging selection, edges & centers magnet to nearby shapes. Hold Alt to disable."
+            >
+              <input
+                type="checkbox"
+                checked={snapAlignPeers}
+                onChange={(e) => setSnapAlignPeers(e.target.checked)}
+                className="rounded border-gray-300 accent-[var(--color-primary)]"
+              />
+              Align
+            </label>
             <input
               type="range"
               min={10}
@@ -231,7 +248,7 @@ const BottomOptions = () => {
               step={5}
               value={gridSnapSize}
               onChange={(e) => setGridSnapSize(parseInt(e.target.value, 10))}
-              title="Grid spacing (10–100px). Hold Alt while dragging to bypass snap."
+              title="Grid spacing (10–100px). Hold Alt while dragging to bypass grid & alignment."
               className="w-20 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-primary)]"
             />
             <span className="text-[10px] font-medium text-[var(--color-text-secondary)] w-9 tabular-nums">
