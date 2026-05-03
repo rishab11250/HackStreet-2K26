@@ -126,7 +126,7 @@ const useStore = create((set, get) => ({
     viewport: { ...state.viewport, zoom: 1 }
   })),
 
-  fitToScreen: () => set((state) => ({
+  fitToScreen: () => set(() => ({
     viewport: { x: 0, y: 0, zoom: 1 }
   })),
 

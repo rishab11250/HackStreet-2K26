@@ -4,6 +4,7 @@ import LeftToolbar from '../toolbar/LeftToolbar';
 import BottomOptions from '../toolbar/BottomOptions';
 import RightPanel from './RightPanel';
 import StickyNote from '../elements/StickyNote';
+import ExportModal from '../ui/ExportModal';
 
 const AppLayout = ({ children }) => {
   const elements = useStore((state) => state.elements);
@@ -32,6 +33,7 @@ const AppLayout = ({ children }) => {
 
         <RightPanel />
       </div>
+      <ExportModal />
     </div>
   );
 };

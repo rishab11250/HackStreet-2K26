@@ -1,4 +1,3 @@
-import React from 'react';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import useStore from '../../store/useStore';
 

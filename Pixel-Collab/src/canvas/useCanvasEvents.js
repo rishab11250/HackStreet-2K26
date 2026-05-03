@@ -42,7 +42,25 @@ const useCanvasEvents = (containerRef) => {
   const [isPanning, setIsPanning] = useState(false);
   const [eraserState, setEraserState] = useState(null);
   const [selectionState, setSelectionState] = useState(null);
+  const [resizeState, setResizeState] = useState(null);
   const lastMousePos = useRef({ x: 0, y: 0 });
+
+  const startResizing = useCallback((e, handle) => {
+    e.stopPropagation();
+    if (selectedIds.length !== 1) return;
+    
+    const element = elements.find(el => el.id === selectedIds[0]);
+    if (!element) return;
+    
+    const { x, y } = toCanvas(e.clientX, e.clientY);
+    setResizeState({
+      handle,
+      startX: x,
+      startY: y,
+      initialElement: { ...element }
+    });
+    setIsDrawing(true);
+  }, [selectedIds, elements, toCanvas]);
 
   const onMouseDown = useCallback((e) => {
     // Middle mouse button or Space + Left Click = Pan
@@ -125,6 +143,30 @@ const useCanvasEvents = (containerRef) => {
 
     if (!isDrawing) return;
 
+    if (resizeState) {
+      const { x, y } = toCanvas(e.clientX, e.clientY);
+      const dx = x - resizeState.startX;
+      const dy = y - resizeState.startY;
+      const { initialElement, handle } = resizeState;
+      const updates = {};
+
+      if (handle.includes('e')) updates.width = Math.max(10, initialElement.width + dx);
+      if (handle.includes('s')) updates.height = Math.max(10, initialElement.height + dy);
+      if (handle.includes('w')) {
+        const newWidth = Math.max(10, initialElement.width - dx);
+        updates.x = initialElement.x + (initialElement.width - newWidth);
+        updates.width = newWidth;
+      }
+      if (handle.includes('n')) {
+        const newHeight = Math.max(10, initialElement.height - dy);
+        updates.y = initialElement.y + (initialElement.height - newHeight);
+        updates.height = newHeight;
+      }
+
+      updateElement(initialElement.id, updates);
+      return;
+    }
+
     const toolArgs = {
       toCanvas,
       currentElement: liveElement,
@@ -159,7 +201,7 @@ const useCanvasEvents = (containerRef) => {
       default:
         break;
     }
-  }, [isPanning, isDrawing, activeTool, liveElement, elements, deleteElements, eraserState, selectionState, handlePan, toCanvas, setSelectedIds]);
+  }, [isPanning, isDrawing, resizeState, updateElement, activeTool, liveElement, elements, deleteElements, eraserState, selectionState, handlePan, toCanvas, setSelectedIds]);
 
   const onMouseUp = useCallback(() => {
     if (isPanning) {
@@ -168,6 +210,13 @@ const useCanvasEvents = (containerRef) => {
     }
 
     if (!isDrawing) return;
+
+    if (resizeState) {
+      pushHistory();
+      setResizeState(null);
+      setIsDrawing(false);
+      return;
+    }
 
     switch (activeTool) {
       case TOOLS.SELECT: {
@@ -196,7 +245,7 @@ const useCanvasEvents = (containerRef) => {
 
     setLiveElement(null);
     setIsDrawing(false);
-  }, [isPanning, isDrawing, activeTool, liveElement, eraserState, selectionState, addElement, pushHistory, updateElement, selectedIds, elements]);
+  }, [isPanning, isDrawing, resizeState, activeTool, liveElement, eraserState, selectionState, addElement, pushHistory, updateElement, selectedIds, elements]);
 
   const onWheel = useCallback((e) => {
     handleZoom(e, containerRef);
@@ -208,7 +257,8 @@ const useCanvasEvents = (containerRef) => {
     onMouseMove,
     onMouseUp,
     onWheel,
-    isPanning
+    isPanning,
+    startResizing,
   };
 };
 
