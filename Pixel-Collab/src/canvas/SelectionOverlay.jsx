@@ -2,7 +2,7 @@ import useStore from '../store/useStore';
 import useViewport from '../hooks/useViewport';
 import { getElementBounds } from '../utils/geometry';
 
-const SelectionOverlay = () => {
+const SelectionOverlay = ({ onStartResizing }) => {
   const { elements, selectedIds } = useStore();
   const { toScreen } = useViewport();
 
@@ -62,8 +62,7 @@ const SelectionOverlay = () => {
             cursor: h.cursor
           }}
           onMouseDown={(e) => {
-            e.stopPropagation();
-            // Resize logic will be triggered here
+            onStartResizing(e, h.pos);
           }}
         />
       ))}

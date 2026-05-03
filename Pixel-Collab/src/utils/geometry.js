@@ -93,3 +93,27 @@ function distToSegment(p, v, w) {
 function distSq(v, w) {
   return (v[0] - w[0]) ** 2 + (v[1] - w[1]) ** 2;
 }
+
+export const getContentBoundingBox = (elements) => {
+  if (elements.length === 0) return { x: 0, y: 0, width: 0, height: 0 };
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  elements.forEach((el) => {
+    const bounds = getElementBounds(el);
+    minX = Math.min(minX, bounds.x);
+    minY = Math.min(minY, bounds.y);
+    maxX = Math.max(maxX, bounds.x + bounds.width);
+    maxY = Math.max(maxY, bounds.y + bounds.height);
+  });
+
+  return {
+    x: minX - 20, // Padding
+    y: minY - 20,
+    width: maxX - minX + 40,
+    height: maxY - minY + 40,
+  };
+};

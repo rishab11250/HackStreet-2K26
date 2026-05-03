@@ -1,4 +1,3 @@
-import React from 'react';
 import { Share2, Download, Menu } from 'lucide-react';
 import useStore from '../../store/useStore';
 import AvatarRow from '../collaboration/AvatarRow';

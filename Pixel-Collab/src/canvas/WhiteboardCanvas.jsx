@@ -17,7 +17,8 @@ const WhiteboardCanvas = () => {
     onMouseMove,
     onMouseUp,
     onWheel,
-    isPanning
+    isPanning,
+    startResizing
   } = useCanvasEvents(containerRef);
 
   const [spacePressed, setSpacePressed] = useState(false);
@@ -99,7 +100,7 @@ const WhiteboardCanvas = () => {
         style={{ width: '100%', height: '100%' }}
       />
       <TextInput />
-      <SelectionOverlay />
+      <SelectionOverlay onStartResizing={startResizing} />
     </div>
   );
 };
