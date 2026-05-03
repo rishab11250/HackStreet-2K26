@@ -1,5 +1,4 @@
-import React from 'react';
-import { Share2, Download, Maximize, ZoomIn, ZoomOut, Menu, ChevronRight } from 'lucide-react';
+import { Share2, Download, ZoomIn, ZoomOut, Menu } from 'lucide-react';
 import useStore from '../../store/useStore';
 
 import AvatarRow from '../collaboration/AvatarRow';

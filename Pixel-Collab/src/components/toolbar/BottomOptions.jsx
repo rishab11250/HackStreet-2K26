@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   Trash2, 
-  Layers, 
   ArrowUp, 
   ArrowDown, 
   ArrowUpToLine, 
@@ -22,8 +21,7 @@ const BottomOptions = () => {
     strokeWidth, setStrokeWidth,
     opacity, setOpacity,
     fontSize, setFontSize,
-    selectedIds, deleteElements,
-    elements
+    selectedIds, deleteElements
   } = useStore();
 
   const [activePicker, setActivePicker] = useState(null); // 'stroke' | 'fill' | null

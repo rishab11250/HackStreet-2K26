@@ -1,4 +1,3 @@
-import React from 'react';
 import { Square, Circle, Minus, MoveRight } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { SHAPES } from '../../store/constants';
