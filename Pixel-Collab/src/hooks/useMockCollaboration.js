@@ -3,7 +3,8 @@ import useStore from '../store/useStore';
 import { generateMockActivity } from '../utils/mockActivity';
 
 export const useMockCollaboration = () => {
-  const { mockUsers, updateMockCursor, addActivityEvent } = useStore();
+  const { updateMockCursor, addActivityEvent } = useStore();
+  const mockUsers = useStore.getState().mockUsers;
 
   useEffect(() => {
     // 1. Cursor movement timers
@@ -25,15 +26,21 @@ export const useMockCollaboration = () => {
       }, interval);
     });
 
+    // Initial event to show it's working
+    const initialEvent = generateMockActivity(mockUsers);
+    addActivityEvent(initialEvent);
+
     // 2. Activity event timer using the new utility
+    // Reduced interval to 8 seconds for more "action"
     const activityTimer = setInterval(() => {
-      const event = generateMockActivity(mockUsers);
+      const currentMockUsers = useStore.getState().mockUsers;
+      const event = generateMockActivity(currentMockUsers);
       addActivityEvent(event);
-    }, 12000); 
+    }, 8000); 
 
     return () => {
       timers.forEach(t => clearInterval(t));
       clearInterval(activityTimer);
     };
-  }, [mockUsers, updateMockCursor, addActivityEvent]);
+  }, [updateMockCursor, addActivityEvent]); // Removed mockUsers from dependencies
 };

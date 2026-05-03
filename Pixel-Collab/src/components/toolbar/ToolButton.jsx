@@ -4,7 +4,7 @@ const ToolButton = ({ icon: Icon, name, shortcut, active, onClick, tooltipSide =
     <div className="relative group flex justify-center py-1">
       <button
         onClick={onClick}
-        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 ${
+        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 active:scale-95 ${
           active 
             ? 'bg-[var(--color-primary)] text-white shadow-md scale-105' 
             : 'text-[var(--color-toolbar-icon)] hover:bg-[var(--color-toolbar-hover-bg,rgba(255,255,255,0.1))] hover:text-white'
