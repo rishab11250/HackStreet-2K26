@@ -1,6 +1,7 @@
-import { useEffect, useRef, useMemo, useState } from 'react';
+import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import useStore from '../store/useStore';
-import { getContentBoundingBox, getElementBounds } from '../utils/geometry';
+import { getContentBoundingBox } from '../utils/geometry';
+import { drawMinimapElement } from './minimapDraw';
 
 const MAP_W = 168;
 const MAP_H = 120;
@@ -9,20 +10,28 @@ const PAD = 8;
 export default function Minimap({ containerRef, presentationMode }) {
   const elements = useStore((s) => s.elements);
   const viewport = useStore((s) => s.viewport);
+  const showGrid = useStore((s) => s.showGrid);
+  const snapToGrid = useStore((s) => s.snapToGrid);
+  const gridSnapSize = useStore((s) => s.gridSnapSize);
   const setViewport = useStore((s) => s.setViewport);
   const [dims, setDims] = useState({ cw: 800, ch: 600 });
   const canvasRef = useRef(null);
+  const dimsRef = useRef(dims);
+
+  useEffect(() => {
+    dimsRef.current = dims;
+  }, [dims]);
 
   useEffect(() => {
     const el = containerRef?.current;
     if (!el) return undefined;
-    const ro = new ResizeObserver(() => {
+    const measure = () => {
       const r = el.getBoundingClientRect();
       setDims({ cw: Math.max(1, r.width), ch: Math.max(1, r.height) });
-    });
+    };
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    const r = el.getBoundingClientRect();
-    setDims({ cw: Math.max(1, r.width), ch: Math.max(1, r.height) });
+    measure();
     return () => ro.disconnect();
   }, [containerRef]);
 
@@ -31,10 +40,16 @@ export default function Minimap({ containerRef, presentationMode }) {
     if (elements.length === 0 || b.width < 8 || b.height < 8) {
       return { x: -400, y: -300, width: 1600, height: 1200 };
     }
-    return b;
+    return {
+      ...b,
+      x: b.x - 160,
+      y: b.y - 120,
+      width: b.width + 320,
+      height: b.height + 240,
+    };
   }, [elements]);
 
-  useEffect(() => {
+  const redraw = useCallback(() => {
     const c = canvasRef.current;
     if (!c || presentationMode) return;
     const ctx = c.getContext('2d');
@@ -61,65 +76,111 @@ export default function Minimap({ containerRef, presentationMode }) {
     ctx.scale(scale, scale);
     ctx.translate(-world.x, -world.y);
 
+    if (showGrid && snapToGrid && gridSnapSize >= 10) {
+      ctx.strokeStyle = 'rgba(120,125,155,0.12)';
+      ctx.lineWidth = 1 / Math.max(scale, 0.0001);
+      const step = gridSnapSize;
+      const gx0 = Math.floor(world.x / step) * step;
+      const gy0 = Math.floor(world.y / step) * step;
+      for (let gx = gx0; gx <= world.x + world.width + step; gx += step) {
+        ctx.beginPath();
+        ctx.moveTo(gx, world.y - 10000);
+        ctx.lineTo(gx, world.y + world.height + 10000);
+        ctx.stroke();
+      }
+      for (let gy = gy0; gy <= world.y + world.height + step; gy += step) {
+        ctx.beginPath();
+        ctx.moveTo(world.x - 10000, gy);
+        ctx.lineTo(world.x + world.width + 10000, gy);
+        ctx.stroke();
+      }
+    }
+
     elements.forEach((el) => {
-      const b = getElementBounds(el);
-      ctx.fillStyle = el.locked ? 'rgba(160, 160, 180, 0.45)' : 'rgba(91, 106, 240, 0.4)';
-      ctx.fillRect(b.x, b.y, Math.max(b.width, 3), Math.max(b.height, 3));
+      drawMinimapElement(ctx, el, scale);
     });
     ctx.restore();
 
-    const vx = -viewport.x / viewport.zoom;
-    const vy = -viewport.y / viewport.zoom;
-    const vw = dims.cw / viewport.zoom;
-    const vh = dims.ch / viewport.zoom;
+    const vpSnapshot = useStore.getState().viewport;
+    const dim = dimsRef.current;
+    const vx = -vpSnapshot.x / vpSnapshot.zoom;
+    const vy = -vpSnapshot.y / vpSnapshot.zoom;
+    const vw = dim.cw / vpSnapshot.zoom;
+    const vh = dim.ch / vpSnapshot.zoom;
+
+    const ix = ox + (vx - world.x) * scale;
+    const iy = oy + (vy - world.y) * scale;
+    const iw = vw * scale;
+    const ih = vh * scale;
 
     ctx.strokeStyle = css.getPropertyValue('--color-primary').trim() || '#5B6AF0';
     ctx.lineWidth = 2;
-    ctx.strokeRect(ox + (vx - world.x) * scale, oy + (vy - world.y) * scale, vw * scale, vh * scale);
+    ctx.strokeRect(ix, iy, Math.max(iw, 2), Math.max(ih, 2));
 
     ctx.fillStyle = dot;
     ctx.font = '10px Inter, system-ui, sans-serif';
     ctx.fillText('Map', 6, 12);
-  }, [elements, viewport, world, dims, presentationMode]);
+  }, [elements, world, presentationMode, showGrid, snapToGrid, gridSnapSize]);
+
+  useEffect(() => {
+    if (!presentationMode) redraw();
+  }, [redraw, presentationMode, viewport, dims]);
+
+  const focusWorldPoint = useCallback(
+    (wx, wy) => {
+      if (presentationMode) return;
+      setViewport((vp) => ({
+        zoom: vp.zoom,
+        x: dimsRef.current.cw / 2 - wx * vp.zoom,
+        y: dimsRef.current.ch / 2 - wy * vp.zoom,
+      }));
+    },
+    [setViewport, presentationMode]
+  );
 
   const handleClick = (e) => {
     if (presentationMode) return;
-    const c = canvasRef.current;
-    if (!c) return;
-    const rect = c.getBoundingClientRect();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    const w = world;
+    if (!rect) return;
+
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    const scale = Math.min((MAP_W - PAD * 2) / world.width, (MAP_H - PAD * 2) / world.height);
-    const ox = PAD + (MAP_W - PAD * 2 - world.width * scale) / 2;
-    const oy = PAD + (MAP_H - PAD * 2 - world.height * scale) / 2;
-    const wx = world.x + (mx - ox) / scale;
-    const wy = world.y + (my - oy) / scale;
-    setViewport({
-      ...viewport,
-      x: dims.cw / 2 - wx * viewport.zoom,
-      y: dims.ch / 2 - wy * viewport.zoom,
-    });
+
+    const scale = Math.min((MAP_W - PAD * 2) / w.width, (MAP_H - PAD * 2) / w.height);
+    const ox = PAD + (MAP_W - PAD * 2 - w.width * scale) / 2;
+    const oy = PAD + (MAP_H - PAD * 2 - w.height * scale) / 2;
+    const wx = w.x + (mx - ox) / scale;
+    const wy = w.y + (my - oy) / scale;
+
+    focusWorldPoint(wx, wy);
   };
+
+  const onKeyNavigate = useCallback(
+    (e) => {
+      if (presentationMode || e.target !== canvasRef.current) return;
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      focusWorldPoint(world.x + world.width / 2, world.y + world.height / 2);
+    },
+    [focusWorldPoint, presentationMode, world]
+  );
 
   if (presentationMode) return null;
 
   return (
     <div
-      className="absolute bottom-4 right-4 z-50 rounded-xl shadow-lg border border-[var(--color-border)] overflow-hidden transition-all duration-300 ease-out bg-[var(--color-panel-bg)]"
+      className="absolute bottom-4 left-4 z-50 rounded-xl shadow-lg border border-[var(--color-border)] overflow-hidden transition-all duration-300 ease-out bg-[var(--color-panel-bg)]"
       style={{ width: MAP_W, height: MAP_H }}
     >
       <canvas
         ref={canvasRef}
         role="img"
-        aria-label="Canvas minimap, click to navigate"
+        aria-label="Canvas minimap. Click or press Enter to navigate to that region."
         tabIndex={0}
         onClick={handleClick}
-        onKeyDown={(ev) => {
-          if (ev.key === 'Enter' || ev.key === ' ') {
-            ev.preventDefault();
-          }
-        }}
-        className="block cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+        onKeyDown={onKeyNavigate}
+        className="block cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] transition-opacity duration-300"
       />
     </div>
   );
