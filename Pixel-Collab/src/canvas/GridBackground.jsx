@@ -6,6 +6,7 @@ const GridBackground = () => {
   const canvasRef = useRef(null);
   const viewport = useStore((state) => state.viewport);
   const showGrid = useStore((state) => state.showGrid);
+  const gridSnapSize = useStore((state) => state.gridSnapSize);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -27,7 +28,7 @@ const GridBackground = () => {
 
     ctx.clearRect(0, 0, width, height);
     
-    const gridSize = 20 * viewport.zoom;
+    const gridSize = Math.max(8, (gridSnapSize || 20) * viewport.zoom);
     const offsetX = viewport.x % gridSize;
     const offsetY = viewport.y % gridSize;
 
@@ -41,7 +42,7 @@ const GridBackground = () => {
         ctx.fill();
       }
     }
-  }, [viewport, showGrid]);
+  }, [viewport, showGrid, gridSnapSize]);
 
   return (
     <canvas

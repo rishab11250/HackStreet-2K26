@@ -42,5 +42,5 @@ export const useMockCollaboration = () => {
       timers.forEach(t => clearInterval(t));
       clearInterval(activityTimer);
     };
-  }, [updateMockCursor, addActivityEvent]); // Removed mockUsers from dependencies
+  }, [updateMockCursor, addActivityEvent]); // eslint-disable-line react-hooks/exhaustive-deps -- demo timers use initial mockUsers snapshot
 };

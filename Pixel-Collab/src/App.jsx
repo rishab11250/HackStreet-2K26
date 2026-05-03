@@ -3,10 +3,12 @@ import AppLayout from './components/layout/AppLayout'
 import WhiteboardCanvas from './canvas/WhiteboardCanvas'
 import { useMockCollaboration } from './hooks/useMockCollaboration'
 import { useKeyboard } from './hooks/useKeyboard'
+import { useTheme } from './hooks/useTheme'
 import useStore from './store/useStore'
 import { deserializeBoard } from './utils/persistence'
 
 function App() {
+  useTheme();
   useMockCollaboration();
   useKeyboard();
   const setElements = useStore(state => state.setElements);

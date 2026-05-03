@@ -9,6 +9,7 @@ import { EraserTool } from '../tools/EraserTool';
 import { SelectTool } from '../tools/SelectTool';
 import { StickyNoteTool } from '../tools/StickyNoteTool';
 import { PanTool } from '../tools/PanTool';
+import { isPointInElement } from '../utils/geometry';
 
 const useCanvasEvents = (containerRef) => {
   const {
@@ -20,6 +21,7 @@ const useCanvasEvents = (containerRef) => {
     opacity,
     fontSize,
     fontWeight,
+    fontStyle,
     elements,
     selectedIds,
     setSelectedIds,
@@ -29,7 +31,6 @@ const useCanvasEvents = (containerRef) => {
     updateElement,
     pushHistory,
     setIsEditingText,
-    isEditingText,
     viewport,
     setViewport,
     eraserSize,
@@ -50,13 +51,14 @@ const useCanvasEvents = (containerRef) => {
   const [panState, setPanState] = useState(null);
   const [resizeState, setResizeState] = useState(null);
   const lastMousePos = useRef({ x: 0, y: 0 });
+  const snapSuppressRef = useRef(false);
 
   const startResizing = useCallback((e, handle) => {
     e.stopPropagation();
     if (selectedIds.length !== 1) return;
     
     const element = elements.find(el => el.id === selectedIds[0]);
-    if (!element) return;
+    if (!element || element.locked) return;
     
     const { x, y } = toCanvas(e.clientX, e.clientY);
     setResizeState({
@@ -69,6 +71,7 @@ const useCanvasEvents = (containerRef) => {
   }, [selectedIds, elements, toCanvas]);
 
   const onMouseDown = useCallback((e) => {
+    snapSuppressRef.current = !!e.altKey;
     // Middle mouse button or Space + Left Click = Pan
     if (e.button === 1 || (e.button === 0 && e.spaceKey) || activeTool === TOOLS.PAN) {
       setIsPanning(true);
@@ -87,8 +90,10 @@ const useCanvasEvents = (containerRef) => {
       opacity,
       fontSize,
       fontWeight,
+      fontStyle,
       activeShape,
       addElement,
+      deleteElements,
       setSelectedIds,
       clearSelection,
       selectedIds,
@@ -144,11 +149,12 @@ const useCanvasEvents = (containerRef) => {
     }
   }, [
     activeTool, activeShape, strokeColor, fillColor, strokeWidth, 
-    opacity, fontSize, fontWeight, toCanvas, pushHistory, addElement, setIsEditingText,
-    setSelectedIds, clearSelection, elements, selectedIds, isEditingText, viewport, setViewport
+    opacity, fontSize, fontWeight, fontStyle, toCanvas, pushHistory, addElement, deleteElements, setIsEditingText,
+    setSelectedIds, clearSelection, elements, selectedIds, viewport, setViewport
   ]);
 
   const onMouseMove = useCallback((e) => {
+    snapSuppressRef.current = !!e.altKey;
     if (isPanning) {
       const dx = e.clientX - lastMousePos.current.x;
       const dy = e.clientY - lastMousePos.current.y;
@@ -160,6 +166,7 @@ const useCanvasEvents = (containerRef) => {
     if (!isDrawing) return;
 
     if (resizeState) {
+      if (resizeState.initialElement?.locked) return;
       const { x, y } = toCanvas(e.clientX, e.clientY);
       const dx = x - resizeState.startX;
       const dy = y - resizeState.startY;
@@ -287,11 +294,16 @@ const useCanvasEvents = (containerRef) => {
     if (!isDrawing) return;
 
     if (resizeState) {
-      pushHistory();
+      if (!resizeState.initialElement?.locked) {
+        pushHistory();
+      }
       setResizeState(null);
       setIsDrawing(false);
       return;
     }
+
+    const snapToGrid = useStore.getState().snapToGrid && !snapSuppressRef.current;
+    const gridSnapSize = useStore.getState().gridSnapSize;
 
     const toolArgs = {
       pushHistory,
@@ -300,11 +312,18 @@ const useCanvasEvents = (containerRef) => {
       elements,
       viewport,
       setViewport,
+      snapToGrid,
+      gridSnapSize,
     };
 
     switch (activeTool) {
       case TOOLS.SELECT: {
-        SelectTool.onMouseUp(selectionState, toolArgs);
+        const st = selectionState;
+        const moved = st?.type === 'move' && ((st.dx ?? 0) !== 0 || (st.dy ?? 0) !== 0);
+        SelectTool.onMouseUp(st, toolArgs);
+        if (moved) {
+          useStore.getState().logActivity('moved selection on the canvas', { kind: 'move' });
+        }
         setSelectionState(null);
         break;
       }
@@ -340,11 +359,23 @@ const useCanvasEvents = (containerRef) => {
     handleZoom(e, containerRef);
   }, [handleZoom, containerRef]);
 
+  const onDoubleClick = useCallback((e) => {
+    if (e.button !== 0) return;
+    if (activeTool !== TOOLS.SELECT) return;
+    const { x, y } = toCanvas(e.clientX, e.clientY);
+    const hit = [...elements].reverse().find((el) => isPointInElement(x, y, el));
+    if (hit?.type === 'text') {
+      setSelectedIds([hit.id]);
+      setIsEditingText(true, hit.id);
+    }
+  }, [activeTool, elements, toCanvas, setSelectedIds, setIsEditingText]);
+
   return {
     liveElement,
     onMouseDown,
     onMouseMove,
     onMouseUp,
+    onDoubleClick,
     onWheel,
     isPanning,
     startResizing,

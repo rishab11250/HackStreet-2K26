@@ -14,9 +14,11 @@ const KEY_MAP = {
   opacity: 'o',
   fontSize: 'fs',
   fontWeight: 'fw',
+  fontStyle: 'fz',
   content: 'c',
   noteColor: 'nc',
   zIndex: 'z',
+  locked: 'lk',
 };
 
 const REVERSE_KEY_MAP = Object.fromEntries(

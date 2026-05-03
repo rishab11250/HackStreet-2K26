@@ -7,7 +7,9 @@ import {
   ArrowDownToLine,
   Bold,
   Italic,
-  Type
+  Type,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { TOOLS } from '../../store/constants';
@@ -30,10 +32,20 @@ const BottomOptions = () => {
     strokeWidth, setStrokeWidth,
     opacity, setOpacity,
     fontSize, setFontSize,
+    fontWeight, setFontWeight,
+    fontStyle, setFontStyle,
     eraserSize, setEraserSize,
     selectedIds, deleteElements,
     bringForward, sendBackward, bringToFront, sendToBack,
-    elements, updateElement
+    elements, updateElement,
+    isEditingText,
+    editingElementId,
+    presentationMode,
+    snapToGrid,
+    setSnapToGrid,
+    gridSnapSize,
+    setGridSnapSize,
+    toggleLockSelected,
   } = useStore();
 
   const [activePicker, setActivePicker] = useState(null);
@@ -44,12 +56,65 @@ const BottomOptions = () => {
   const isDrawingTool = [TOOLS.PENCIL, TOOLS.SHAPE].includes(activeTool);
   const isEraserTool = activeTool === TOOLS.ERASER;
   
-  const showOptions = isDrawingTool || isTextTool || isStickyTool || isEraserTool || (isSelectTool && selectedIds.length > 0);
+  const showOptions =
+    isDrawingTool ||
+    isTextTool ||
+    isStickyTool ||
+    isEraserTool ||
+    isSelectTool ||
+    activeTool === TOOLS.PAN;
 
+  if (presentationMode) return null;
   if (!showOptions) return null;
 
   const selectedId = selectedIds[0];
   const selectedElement = elements.find(el => el.id === selectedId);
+  const isTextFormatting =
+    isTextTool || (isSelectTool && selectedElement?.type === 'text');
+
+  const targetTextElementId =
+    isSelectTool && selectedElement?.type === 'text'
+      ? selectedId
+      : isTextTool && isEditingText && editingElementId
+        ? editingElementId
+        : null;
+
+  const applyTextPatch = (patch) => {
+    if (targetTextElementId) updateElement(targetTextElementId, patch);
+  };
+
+  const editingElement =
+    isTextTool && isEditingText && editingElementId
+      ? elements.find((e) => e.id === editingElementId)
+      : null;
+
+  const displayStrokeColor =
+    isSelectTool && selectedElement?.type === 'text'
+      ? (selectedElement.strokeColor ?? strokeColor)
+      : editingElement
+        ? (editingElement.strokeColor ?? strokeColor)
+        : strokeColor;
+
+  const uiFontSize =
+    isSelectTool && selectedElement?.type === 'text'
+      ? (selectedElement.fontSize ?? fontSize)
+      : editingElement
+        ? (editingElement.fontSize ?? fontSize)
+        : fontSize;
+
+  const uiFontWeight =
+    isSelectTool && selectedElement?.type === 'text'
+      ? String(selectedElement.fontWeight ?? fontWeight)
+      : editingElement
+        ? String(editingElement.fontWeight ?? fontWeight)
+        : String(fontWeight);
+
+  const uiFontStyle =
+    isSelectTool && selectedElement?.type === 'text'
+      ? (selectedElement.fontStyle ?? fontStyle)
+      : editingElement
+        ? (editingElement.fontStyle ?? fontStyle)
+        : fontStyle;
 
   const handleStickyColorChange = (color) => {
     if (isSelectTool && selectedElement?.type === 'sticky') {
@@ -102,16 +167,20 @@ const BottomOptions = () => {
             <button 
               onClick={() => setActivePicker(activePicker === 'stroke' ? null : 'stroke')}
               className="w-8 h-8 rounded-full border-2 border-gray-100 flex items-center justify-center hover:scale-105 transition-transform"
-              style={{ backgroundColor: strokeColor === 'transparent' ? 'white' : strokeColor }}
+              style={{ backgroundColor: displayStrokeColor === 'transparent' ? 'white' : displayStrokeColor }}
               title="Stroke Color"
             >
-              {strokeColor === 'transparent' && <div className="w-full h-[2px] bg-red-500 rotate-45" />}
+              {displayStrokeColor === 'transparent' && <div className="w-full h-[2px] bg-red-500 rotate-45" />}
             </button>
             {activePicker === 'stroke' && (
               <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2">
                 <ColorPicker 
-                  value={strokeColor} 
-                  onChange={(c) => { setStrokeColor(c); setActivePicker(null); }} 
+                  value={displayStrokeColor} 
+                  onChange={(c) => {
+                    setStrokeColor(c);
+                    applyTextPatch({ strokeColor: c });
+                    setActivePicker(null);
+                  }} 
                   label="Stroke Color"
                 />
               </div>
@@ -119,7 +188,7 @@ const BottomOptions = () => {
           </div>
 
           {/* Fill Color */}
-          {activeTool !== TOOLS.PENCIL && !isTextTool && (
+          {activeTool !== TOOLS.PENCIL && !isTextTool && !(isSelectTool && selectedElement?.type === 'text') && (
             <div className="relative">
               <button 
                 onClick={() => setActivePicker(activePicker === 'fill' ? null : 'fill')}
@@ -143,7 +212,35 @@ const BottomOptions = () => {
         </>
       )}
 
-      {!isEraserTool && <div className="w-[1px] h-6 bg-gray-100 mx-1" />}
+      {!isEraserTool && (
+        <>
+          <div className="flex items-center gap-2 px-2">
+            <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-text-muted)] cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={snapToGrid}
+                onChange={(e) => setSnapToGrid(e.target.checked)}
+                className="rounded border-gray-300 accent-[var(--color-primary)]"
+              />
+              Snap
+            </label>
+            <input
+              type="range"
+              min={10}
+              max={100}
+              step={5}
+              value={gridSnapSize}
+              onChange={(e) => setGridSnapSize(parseInt(e.target.value, 10))}
+              title="Grid spacing (10–100px). Hold Alt while dragging to bypass snap."
+              className="w-20 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-primary)]"
+            />
+            <span className="text-[10px] font-medium text-[var(--color-text-secondary)] w-9 tabular-nums">
+              {gridSnapSize}px
+            </span>
+          </div>
+          <div className="w-[1px] h-6 bg-gray-100 mx-1" />
+        </>
+      )}
 
       {/* Stroke Width */}
       {!isTextTool && !isStickyTool && !isEraserTool && !(isSelectTool && selectedElement?.type === 'sticky') && (
@@ -168,19 +265,49 @@ const BottomOptions = () => {
         </div>
       )}
 
-      {/* Font Size for Text */}
-      {isTextTool && !isEraserTool && (
+      {/* Font size / weight / style for text tool or selected text */}
+      {isTextFormatting && !isEraserTool && (
         <div className="flex items-center gap-2 px-2">
           <Type size={14} className="text-gray-400" />
           <select 
-            value={fontSize}
-            onChange={(e) => setFontSize(parseInt(e.target.value))}
+            value={uiFontSize}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              setFontSize(v);
+              applyTextPatch({ fontSize: v });
+            }}
             className="text-xs font-medium border-none focus:ring-0 cursor-pointer"
           >
             {[12, 16, 20, 24, 32, 48, 64].map(s => <option key={s} value={s}>{s}px</option>)}
           </select>
-          <button className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><Bold size={14} /></button>
-          <button className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><Italic size={14} /></button>
+          <button
+            type="button"
+            title="Bold"
+            onClick={() => {
+              const next = uiFontWeight === '700' ? '400' : '700';
+              setFontWeight(next);
+              applyTextPatch({ fontWeight: next });
+            }}
+            className={`p-1.5 rounded transition-colors ${
+              uiFontWeight === '700' ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]' : 'hover:bg-gray-100 text-gray-600'
+            }`}
+          >
+            <Bold size={14} />
+          </button>
+          <button
+            type="button"
+            title="Italic"
+            onClick={() => {
+              const next = uiFontStyle === 'italic' ? 'normal' : 'italic';
+              setFontStyle(next);
+              applyTextPatch({ fontStyle: next });
+            }}
+            className={`p-1.5 rounded transition-colors ${
+              uiFontStyle === 'italic' ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]' : 'hover:bg-gray-100 text-gray-600'
+            }`}
+          >
+            <Italic size={14} />
+          </button>
         </div>
       )}
 
@@ -188,6 +315,20 @@ const BottomOptions = () => {
       {isSelectTool && selectedIds.length > 0 && !isEraserTool && (
         <>
           <div className="w-[1px] h-6 bg-gray-100 mx-1" />
+          <button
+            type="button"
+            onClick={() => toggleLockSelected()}
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            title="Lock or unlock selected elements"
+            aria-label="Toggle lock on selection"
+          >
+            {selectedIds.length > 0 &&
+            selectedIds.every((id) => elements.find((e) => e.id === id)?.locked) ? (
+              <Unlock size={18} />
+            ) : (
+              <Lock size={18} />
+            )}
+          </button>
           <div className="flex items-center gap-1">
             <button onClick={() => bringToFront(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring to Front"><ArrowUpToLine size={16} /></button>
             <button onClick={() => bringForward(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring Forward"><ArrowUp size={16} /></button>
@@ -196,9 +337,12 @@ const BottomOptions = () => {
           </div>
           <div className="w-[1px] h-6 bg-gray-100 mx-1" />
           <button 
-            onClick={() => deleteElements(selectedIds)}
+            onClick={() => {
+              const removable = selectedIds.filter((id) => !elements.find((e) => e.id === id)?.locked);
+              if (removable.length) deleteElements(removable);
+            }}
             className="p-2 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors"
-            title="Delete Selected"
+            title="Delete selected (locked items skipped)"
           >
             <Trash2 size={18} />
           </button>

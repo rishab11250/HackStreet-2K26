@@ -12,6 +12,7 @@ export const EraserTool = {
 
     const hitIds = elements
       .filter(el => !state.erasedIds.has(el.id))
+      .filter(el => !el.locked)
       .filter(el => {
         // Simple bounding box hit test for now
         // A more advanced one would check path proximity for freehand
