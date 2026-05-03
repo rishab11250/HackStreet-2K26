@@ -1,129 +1,106 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { X, Image as ImageIcon, FileText, Download, Check } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { exportCanvas } from '../../utils/exportCanvas';
 
 const ExportModal = () => {
-  const { isExportModalOpen, setExportModalOpen, elements } = useStore();
+  const { isExportModalOpen, setExportModalOpen, elements, viewport } = useStore();
   const [format, setFormat] = useState('png'); // 'png' | 'pdf'
-  const [includeBackground, setIncludeBackground] = useState(true);
-  const [cropToContent, setCropToContent] = useState(true);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [options, setOptions] = useState({
+    includeBackground: true,
+    cropToContent: true,
+  });
 
   if (!isExportModalOpen) return null;
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      await exportCanvas(format, elements, {
-        includeBackground,
-        cropToContent,
-      });
-      setExportModalOpen(false);
-    } catch (error) {
-      console.error('Export failed:', error);
-    } finally {
-      setIsDownloading(false);
-    }
+  const handleExport = async () => {
+    await exportCanvas(elements, viewport, format, options);
+    setExportModalOpen(false);
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={() => setExportModalOpen(false)}
-      />
-
-      {/* Modal Card */}
-      <div className="relative w-full max-w-[480px] bg-white rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Export Board</h2>
-              <p className="text-sm text-gray-500 mt-1">Download your whiteboard as an image or PDF</p>
-            </div>
-            <button 
-              onClick={() => setExportModalOpen(false)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
-            >
-              <X size={20} />
-            </button>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-gray-800">Export Board</h2>
+            <p className="text-xs text-gray-500">Download your work as high-quality image or PDF</p>
           </div>
+          <button 
+            onClick={() => setExportModalOpen(false)}
+            className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
-          {/* Format Selector */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <button
+        {/* Body */}
+        <div className="p-6 flex flex-col gap-6">
+          {/* Format Selection */}
+          <div className="grid grid-cols-2 gap-3">
+            <button 
               onClick={() => setFormat('png')}
-              className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${
+              className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                 format === 'png' 
-                  ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]' 
-                  : 'border-gray-100 hover:border-gray-200 text-gray-500'
+                  ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]' 
+                  : 'border-gray-100 hover:border-gray-200 bg-white'
               }`}
             >
-              <ImageIcon size={32} className="mb-2" />
-              <span className="text-sm font-bold">PNG Image</span>
-              <div className={`mt-2 w-5 h-5 rounded-full flex items-center justify-center ${format === 'png' ? 'bg-[var(--color-primary)] text-white' : 'border border-gray-200'}`}>
-                {format === 'png' && <Check size={12} />}
-              </div>
+              <ImageIcon size={24} className={format === 'png' ? 'text-[var(--color-primary)]' : 'text-gray-400'} />
+              <span className={`text-xs font-bold ${format === 'png' ? 'text-[var(--color-primary)]' : 'text-gray-600'}`}>PNG Image</span>
             </button>
-
-            <button
+            <button 
               onClick={() => setFormat('pdf')}
-              className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${
+              className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                 format === 'pdf' 
-                  ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]' 
-                  : 'border-gray-100 hover:border-gray-200 text-gray-500'
+                  ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]' 
+                  : 'border-gray-100 hover:border-gray-200 bg-white'
               }`}
             >
-              <FileText size={32} className="mb-2" />
-              <span className="text-sm font-bold">PDF Document</span>
-              <div className={`mt-2 w-5 h-5 rounded-full flex items-center justify-center ${format === 'pdf' ? 'bg-[var(--color-primary)] text-white' : 'border border-gray-200'}`}>
-                {format === 'pdf' && <Check size={12} />}
-              </div>
+              <FileText size={24} className={format === 'pdf' ? 'text-[var(--color-primary)]' : 'text-gray-400'} />
+              <span className={`text-xs font-bold ${format === 'pdf' ? 'text-[var(--color-primary)]' : 'text-gray-600'}`}>PDF Document</span>
             </button>
           </div>
 
-          {/* Options */}
-          <div className="space-y-4 mb-8">
+          {/* Settings */}
+          <div className="flex flex-col gap-3">
             <label className="flex items-center gap-3 cursor-pointer group">
               <input 
                 type="checkbox"
-                checked={includeBackground}
-                onChange={(e) => setIncludeBackground(e.target.checked)}
-                className="w-4 h-4 rounded text-[var(--color-primary)] focus:ring-[var(--color-primary)] border-gray-300"
+                checked={options.includeBackground}
+                onChange={() => setOptions({ ...options, includeBackground: !options.includeBackground })}
+                className="w-4 h-4 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
               />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Include background</span>
+              <span className="text-xs font-medium text-gray-700">Include background grid</span>
             </label>
-
             <label className="flex items-center gap-3 cursor-pointer group">
               <input 
                 type="checkbox"
-                checked={cropToContent}
-                onChange={(e) => setCropToContent(e.target.checked)}
-                className="w-4 h-4 rounded text-[var(--color-primary)] focus:ring-[var(--color-primary)] border-gray-300"
+                checked={options.cropToContent}
+                onChange={() => setOptions({ ...options, cropToContent: !options.cropToContent })}
+                className="w-4 h-4 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
               />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Crop to content</span>
+              <span className="text-xs font-medium text-gray-700">Crop to board content only</span>
             </label>
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex gap-3">
-            <button 
-              onClick={() => setExportModalOpen(false)}
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[var(--color-primary)] text-white rounded-xl text-sm font-bold hover:bg-[var(--color-primary-hover)] transition-colors shadow-lg disabled:opacity-50"
-            >
-              <Download size={18} />
-              {isDownloading ? 'Downloading...' : 'Download'}
-            </button>
-          </div>
+        {/* Footer */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+          <button 
+            onClick={() => setExportModalOpen(false)}
+            className="flex-1 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-200 rounded-xl transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleExport}
+            className="flex-1 py-2.5 text-sm font-bold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] rounded-xl transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
+          >
+            <Download size={16} />
+            Download
+          </button>
         </div>
       </div>
     </div>

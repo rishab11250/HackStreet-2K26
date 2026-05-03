@@ -1,3 +1,4 @@
+import React from 'react';
 import useStore from '../../store/useStore';
 import TopBar from './TopBar';
 import LeftToolbar from '../toolbar/LeftToolbar';
@@ -29,11 +30,11 @@ const AppLayout = ({ children }) => {
           </div>
 
           <BottomOptions />
+          <ExportModal />
         </main>
 
         <RightPanel />
       </div>
-      <ExportModal />
     </div>
   );
 };
