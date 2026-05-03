@@ -163,6 +163,7 @@ const drawArrow = (ctx, el) => {
 };
 
 const drawText = (ctx, el) => {
+  // If no content, we draw a small placeholder or nothing if not editing
   if (!el.content) return;
   
   ctx.fillStyle = el.strokeColor;

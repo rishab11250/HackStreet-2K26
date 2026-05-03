@@ -8,6 +8,7 @@ import { TextTool } from '../tools/TextTool';
 import { EraserTool } from '../tools/EraserTool';
 import { SelectTool } from '../tools/SelectTool';
 import { StickyNoteTool } from '../tools/StickyNoteTool';
+import { PanTool } from '../tools/PanTool';
 
 const useCanvasEvents = (containerRef) => {
   const {
@@ -28,6 +29,10 @@ const useCanvasEvents = (containerRef) => {
     updateElement,
     pushHistory,
     setIsEditingText,
+    isEditingText,
+    viewport,
+    setViewport,
+    eraserSize,
   } = useStore();
 
   const { toCanvas: baseToCanvas, handlePan, handleZoom, getRelativeCoords } = useViewport();
@@ -42,6 +47,7 @@ const useCanvasEvents = (containerRef) => {
   const [isPanning, setIsPanning] = useState(false);
   const [eraserState, setEraserState] = useState(null);
   const [selectionState, setSelectionState] = useState(null);
+  const [panState, setPanState] = useState(null);
   const [resizeState, setResizeState] = useState(null);
   const lastMousePos = useRef({ x: 0, y: 0 });
 
@@ -88,12 +94,20 @@ const useCanvasEvents = (containerRef) => {
       selectedIds,
       elements,
       setIsEditingText,
+      viewport,
+      setViewport,
     };
 
     switch (activeTool) {
       case TOOLS.SELECT: {
         const state = SelectTool.onMouseDown(e, toolArgs);
         setSelectionState(state);
+        setIsDrawing(true);
+        break;
+      }
+      case TOOLS.PAN: {
+        const state = PanTool.onMouseDown(e, toolArgs);
+        setPanState(state);
         setIsDrawing(true);
         break;
       }
@@ -110,6 +124,8 @@ const useCanvasEvents = (containerRef) => {
         break;
       }
       case TOOLS.TEXT: {
+        // If we click while editing, the blur handler on the TextInput 
+        // will handle closing the old one. We just need to create the new one.
         TextTool.onClick(e, toolArgs);
         break;
       }
@@ -129,7 +145,7 @@ const useCanvasEvents = (containerRef) => {
   }, [
     activeTool, activeShape, strokeColor, fillColor, strokeWidth, 
     opacity, fontSize, fontWeight, toCanvas, pushHistory, addElement, setIsEditingText,
-    setSelectedIds, clearSelection, elements, selectedIds
+    setSelectedIds, clearSelection, elements, selectedIds, isEditingText, viewport, setViewport
   ]);
 
   const onMouseMove = useCallback((e) => {
@@ -174,13 +190,72 @@ const useCanvasEvents = (containerRef) => {
       elements,
       deleteElements,
       setSelectedIds,
-      state: activeTool === TOOLS.ERASER ? eraserState : selectionState,
+      viewport,
+      setViewport,
+      eraserSize,
+      state: activeTool === TOOLS.ERASER ? eraserState : 
+             activeTool === TOOLS.SELECT ? selectionState : 
+             activeTool === TOOLS.PAN ? panState : null,
     };
 
     switch (activeTool) {
       case TOOLS.SELECT: {
-        const newState = SelectTool.onMouseMove(e, toolArgs);
-        setSelectionState(newState);
+        const { x, y } = toCanvas(e.clientX, e.clientY);
+        const state = selectionState;
+        if (state && state.type === 'marquee') {
+          const width = x - state.startX;
+          const height = y - state.startY;
+          
+          // Screen coordinates for the marquee visual
+          const rect = containerRef.current.getBoundingClientRect();
+          const startX_screen = state.startX_screen || (e.clientX - rect.left);
+          const startY_screen = state.startY_screen || (e.clientY - rect.top);
+          const currentX_screen = e.clientX - rect.left;
+          const currentY_screen = e.clientY - rect.top;
+
+          const newState = { 
+            ...state, 
+            x: Math.min(startX_screen, currentX_screen), 
+            y: Math.min(startY_screen, currentY_screen), 
+            width: Math.abs(currentX_screen - startX_screen), 
+            height: Math.abs(currentY_screen - startY_screen),
+            startX_screen,
+            startY_screen
+          };
+          
+          // Find elements in box (using canvas coordinates)
+          const marqueeCanvasX = Math.min(state.startX, x);
+          const marqueeCanvasY = Math.min(state.startY, y);
+          const marqueeCanvasW = Math.abs(width);
+          const marqueeCanvasH = Math.abs(height);
+
+          // Selection tool logic should ideally remain in its tool class, but we're inlining for access to containerRef
+          const inBoxIds = elements
+            .filter(el => {
+              const elX = el.x;
+              const elY = el.y;
+              const elW = el.width || 0;
+              const elH = el.height || 0;
+              return (
+                elX >= marqueeCanvasX &&
+                elY >= marqueeCanvasY &&
+                elX + elW <= marqueeCanvasX + marqueeCanvasW &&
+                elY + elH <= marqueeCanvasY + marqueeCanvasH
+              );
+            })
+            .map(el => el.id);
+          
+          setSelectedIds(inBoxIds);
+          setSelectionState(newState);
+        } else {
+          const newState = SelectTool.onMouseMove(e, toolArgs);
+          setSelectionState(newState);
+        }
+        break;
+      }
+      case TOOLS.PAN: {
+        const newState = PanTool.onMouseMove(e, toolArgs);
+        setPanState(newState);
         break;
       }
       case TOOLS.PENCIL: {
@@ -201,7 +276,7 @@ const useCanvasEvents = (containerRef) => {
       default:
         break;
     }
-  }, [isPanning, isDrawing, resizeState, updateElement, activeTool, liveElement, elements, deleteElements, eraserState, selectionState, handlePan, toCanvas, setSelectedIds]);
+  }, [isPanning, isDrawing, resizeState, updateElement, activeTool, liveElement, elements, deleteElements, eraserState, selectionState, handlePan, toCanvas, setSelectedIds, viewport, setViewport, eraserSize, panState, containerRef]);
 
   const onMouseUp = useCallback(() => {
     if (isPanning) {
@@ -218,10 +293,24 @@ const useCanvasEvents = (containerRef) => {
       return;
     }
 
+    const toolArgs = {
+      pushHistory,
+      updateElement,
+      selectedIds,
+      elements,
+      viewport,
+      setViewport,
+    };
+
     switch (activeTool) {
       case TOOLS.SELECT: {
-        SelectTool.onMouseUp(selectionState, { pushHistory, updateElement, selectedIds, elements });
+        SelectTool.onMouseUp(selectionState, toolArgs);
         setSelectionState(null);
+        break;
+      }
+      case TOOLS.PAN: {
+        PanTool.onMouseUp(panState, toolArgs);
+        setPanState(null);
         break;
       }
       case TOOLS.PENCIL: {
@@ -245,7 +334,7 @@ const useCanvasEvents = (containerRef) => {
 
     setLiveElement(null);
     setIsDrawing(false);
-  }, [isPanning, isDrawing, resizeState, activeTool, liveElement, eraserState, selectionState, addElement, pushHistory, updateElement, selectedIds, elements]);
+  }, [isPanning, isDrawing, resizeState, activeTool, liveElement, eraserState, selectionState, addElement, pushHistory, updateElement, selectedIds, elements, viewport, setViewport, panState]);
 
   const onWheel = useCallback((e) => {
     handleZoom(e, containerRef);
@@ -259,6 +348,7 @@ const useCanvasEvents = (containerRef) => {
     onWheel,
     isPanning,
     startResizing,
+    selectionState,
   };
 };
 

@@ -6,6 +6,8 @@ import BottomOptions from '../toolbar/BottomOptions';
 import RightPanel from './RightPanel';
 import StickyNote from '../elements/StickyNote';
 import ExportModal from '../ui/ExportModal';
+import TypingIndicator from '../collaboration/TypingIndicator';
+import MockCursors from '../collaboration/MockCursors';
 
 const AppLayout = ({ children }) => {
   const elements = useStore((state) => state.elements);
@@ -29,8 +31,16 @@ const AppLayout = ({ children }) => {
             ))}
           </div>
 
+          {/* Floating UI Elements */}
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
+            <TypingIndicator />
+          </div>
+
           <BottomOptions />
           <ExportModal />
+
+          {/* Cursors Layer (Ensure they are on top of everything including stickies) */}
+          <MockCursors />
         </main>
 
         <RightPanel />

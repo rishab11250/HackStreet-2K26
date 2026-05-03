@@ -14,7 +14,7 @@ const ExportModal = () => {
   if (!isExportModalOpen) return null;
 
   const handleExport = async () => {
-    await exportCanvas(elements, viewport, format, options);
+    await exportCanvas(format, elements, options);
     setExportModalOpen(false);
   };
 
@@ -96,10 +96,10 @@ const ExportModal = () => {
           </button>
           <button 
             onClick={handleExport}
-            className="flex-1 py-2.5 text-sm font-bold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] rounded-xl transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 text-sm font-bold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] rounded-xl transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 active:scale-[0.98]"
           >
-            <Download size={16} />
-            Download
+            <Download size={18} />
+            Export Now
           </button>
         </div>
       </div>

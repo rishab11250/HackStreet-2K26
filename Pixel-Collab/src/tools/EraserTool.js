@@ -4,11 +4,11 @@ export const EraserTool = {
     return { isErasing: true, erasedIds: new Set() };
   },
 
-  onMouseMove: (e, { toCanvas, elements, deleteElements, state }) => {
+  onMouseMove: (e, { toCanvas, elements, deleteElements, state, eraserSize }) => {
     if (!state?.isErasing) return state;
 
     const { x, y } = toCanvas(e.clientX, e.clientY);
-    const ERASE_RADIUS = 10;
+    const ERASE_RADIUS = eraserSize || 10;
 
     const hitIds = elements
       .filter(el => !state.erasedIds.has(el.id))

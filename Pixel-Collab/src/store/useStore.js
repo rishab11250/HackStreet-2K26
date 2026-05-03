@@ -6,6 +6,7 @@ const useStore = create((set, get) => ({
   elements: [],
   selectedIds: [],
 
+  setElements: (elements) => set({ elements }),
   addElement: (element) => set((state) => ({
     elements: [...state.elements, element]
   })),
@@ -48,6 +49,7 @@ const useStore = create((set, get) => ({
   }),
 
   setSelectedIds: (ids) => set({ selectedIds: ids }),
+  selectAll: () => set((state) => ({ selectedIds: state.elements.map(el => el.id) })),
   clearSelection: () => set({ selectedIds: [] }),
 
   bringForward: (ids) => set((state) => {
@@ -96,6 +98,7 @@ const useStore = create((set, get) => ({
   strokeColor: '#1A1B2E',
   fillColor: 'transparent',
   strokeWidth: 2,
+  eraserSize: 20,
   opacity: 1,
   fontSize: 16,
   fontWeight: '400',
@@ -104,6 +107,7 @@ const useStore = create((set, get) => ({
   setStrokeColor: (color) => set({ strokeColor: color }),
   setFillColor: (color) => set({ fillColor: color }),
   setStrokeWidth: (w) => set({ strokeWidth: w }),
+  setEraserSize: (s) => set({ eraserSize: s }),
   setOpacity: (o) => set({ opacity: o }),
   setFontSize: (s) => set({ fontSize: s }),
   addRecentColor: (color) => set((state) => ({

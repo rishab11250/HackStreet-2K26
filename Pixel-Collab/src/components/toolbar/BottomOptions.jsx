@@ -30,6 +30,7 @@ const BottomOptions = () => {
     strokeWidth, setStrokeWidth,
     opacity, setOpacity,
     fontSize, setFontSize,
+    eraserSize, setEraserSize,
     selectedIds, deleteElements,
     bringForward, sendBackward, bringToFront, sendToBack,
     elements, updateElement
@@ -41,8 +42,9 @@ const BottomOptions = () => {
   const isSelectTool = activeTool === TOOLS.SELECT;
   const isStickyTool = activeTool === TOOLS.STICKY;
   const isDrawingTool = [TOOLS.PENCIL, TOOLS.SHAPE].includes(activeTool);
+  const isEraserTool = activeTool === TOOLS.ERASER;
   
-  const showOptions = isDrawingTool || isTextTool || isStickyTool || (isSelectTool && selectedIds.length > 0);
+  const showOptions = isDrawingTool || isTextTool || isStickyTool || isEraserTool || (isSelectTool && selectedIds.length > 0);
 
   if (!showOptions) return null;
 
@@ -60,6 +62,24 @@ const BottomOptions = () => {
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white border border-[var(--color-border)] rounded-2xl shadow-2xl p-2 flex items-center gap-3 z-40 animate-in slide-in-from-bottom-4 duration-300">
       
+      {/* Eraser Size */}
+      {isEraserTool && (
+        <div className="flex items-center gap-3 px-3 border-r border-gray-100 mr-1">
+          <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-[10px] font-bold text-gray-400">
+            SIZE
+          </div>
+          <input 
+            type="range" 
+            min="5" 
+            max="100" 
+            value={eraserSize} 
+            onChange={(e) => setEraserSize(parseInt(e.target.value))}
+            className="w-24 accent-[var(--color-primary)]"
+          />
+          <span className="text-[10px] font-bold text-gray-500 min-w-[24px]">{eraserSize}px</span>
+        </div>
+      )}
+
       {/* Sticky Colors (shown when sticky tool or a sticky note is selected) */}
       {(isStickyTool || (isSelectTool && selectedElement?.type === 'sticky')) ? (
         <div className="flex items-center gap-2 px-2">
@@ -75,7 +95,7 @@ const BottomOptions = () => {
             />
           ))}
         </div>
-      ) : (
+      ) : !isEraserTool && (
         <>
           {/* Stroke Color */}
           <div className="relative">
@@ -123,10 +143,10 @@ const BottomOptions = () => {
         </>
       )}
 
-      <div className="w-[1px] h-6 bg-gray-100 mx-1" />
+      {!isEraserTool && <div className="w-[1px] h-6 bg-gray-100 mx-1" />}
 
       {/* Stroke Width */}
-      {!isTextTool && !isStickyTool && !(isSelectTool && selectedElement?.type === 'sticky') && (
+      {!isTextTool && !isStickyTool && !isEraserTool && !(isSelectTool && selectedElement?.type === 'sticky') && (
         <div className="flex items-center gap-3 px-2">
           {[1, 3, 8].map((w) => (
             <button
@@ -149,7 +169,7 @@ const BottomOptions = () => {
       )}
 
       {/* Font Size for Text */}
-      {isTextTool && (
+      {isTextTool && !isEraserTool && (
         <div className="flex items-center gap-2 px-2">
           <Type size={14} className="text-gray-400" />
           <select 
@@ -165,7 +185,7 @@ const BottomOptions = () => {
       )}
 
       {/* Z-Order & Delete for Selection */}
-      {isSelectTool && selectedIds.length > 0 && (
+      {isSelectTool && selectedIds.length > 0 && !isEraserTool && (
         <>
           <div className="w-[1px] h-6 bg-gray-100 mx-1" />
           <div className="flex items-center gap-1">
@@ -186,7 +206,7 @@ const BottomOptions = () => {
       )}
 
       {/* Opacity */}
-      {!(isStickyTool || (isSelectTool && selectedElement?.type === 'sticky')) && (
+      {!isEraserTool && !(isStickyTool || (isSelectTool && selectedElement?.type === 'sticky')) && (
         <div className="flex items-center gap-2 px-2 border-l border-gray-100 ml-1">
           <span className="text-[10px] font-bold text-gray-400 uppercase">Op</span>
           <input 
