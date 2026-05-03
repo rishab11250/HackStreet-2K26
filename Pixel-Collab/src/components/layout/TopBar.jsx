@@ -1,19 +1,15 @@
-import { Share2, Download, ZoomIn, ZoomOut, Menu } from 'lucide-react';
+import React from 'react';
+import { Share2, Download, Menu } from 'lucide-react';
 import useStore from '../../store/useStore';
 import AvatarRow from '../collaboration/AvatarRow';
+import ZoomControls from '../ui/ZoomControls';
 
 const TopBar = () => {
   const { 
     setExportModalOpen, 
-    viewport, 
-    zoomIn, 
-    zoomOut, 
-    resetZoom, 
     toggleActivityFeed,
     showActivityFeed 
   } = useStore();
-
-  const zoomPercent = Math.round(viewport.zoom * 100);
 
   return (
     <header className="h-[52px] bg-white border-b border-[var(--color-border)] px-4 flex items-center justify-between z-30 shadow-sm">
@@ -23,7 +19,7 @@ const TopBar = () => {
         <span className="font-semibold text-[var(--color-text-primary)] hidden sm:block">CollabBoard</span>
       </div>
 
-      {/* Center: Placeholder for future features */}
+      {/* Center: Placeholder */}
       <div className="hidden md:flex items-center bg-[var(--color-primary-light)] px-3 py-1 rounded-full border border-[var(--color-primary)]/10">
         <span className="text-xs font-medium text-[var(--color-primary)]">Personal Workspace</span>
       </div>
@@ -34,18 +30,7 @@ const TopBar = () => {
 
         <div className="h-6 w-[1px] bg-[var(--color-border)] mx-1 hidden sm:block" />
 
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-md border border-gray-100">
-          <button onClick={zoomOut} className="p-1 hover:bg-white rounded transition-colors text-gray-600">
-            <ZoomOut size={14} />
-          </button>
-          <button onClick={resetZoom} className="px-1 text-[11px] font-semibold text-gray-700 min-w-[36px] text-center hover:bg-white rounded">
-            {zoomPercent}%
-          </button>
-          <button onClick={zoomIn} className="p-1 hover:bg-white rounded transition-colors text-gray-600">
-            <ZoomIn size={14} />
-          </button>
-        </div>
+        <ZoomControls />
 
         <div className="h-6 w-[1px] bg-[var(--color-border)] mx-1 hidden sm:block" />
 
