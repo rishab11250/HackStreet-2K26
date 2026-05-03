@@ -9,7 +9,7 @@ import SelectionOverlay from './SelectionOverlay';
 const WhiteboardCanvas = () => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const { elements, viewport } = useStore();
+  const { elements, viewport, activeTool, isEditingText } = useStore();
   
   const {
     liveElement,
@@ -18,7 +18,8 @@ const WhiteboardCanvas = () => {
     onMouseUp,
     onWheel,
     isPanning,
-    startResizing
+    startResizing,
+    selectionState
   } = useCanvasEvents(containerRef);
 
   const [spacePressed, setSpacePressed] = useState(false);
@@ -67,7 +68,7 @@ const WhiteboardCanvas = () => {
 
     updateCanvasSize();
     return () => resizeObserver.disconnect();
-  }, [elements, viewport, liveElement]);
+  }, [elements, viewport, liveElement, selectionState]);
 
   // Regular render call
   useEffect(() => {
@@ -86,7 +87,13 @@ const WhiteboardCanvas = () => {
   return (
     <div 
       ref={containerRef} 
-      className={`relative w-full h-full bg-[#F8F9FB] overflow-hidden ${isPanning || spacePressed ? 'cursor-grabbing' : 'cursor-crosshair'}`}
+      className={`relative w-full h-full bg-[#F8F9FB] overflow-hidden ${
+        isPanning || spacePressed 
+          ? 'cursor-grabbing' 
+          : activeTool === 'text' 
+            ? 'cursor-text' 
+            : 'cursor-crosshair'
+      }`}
       onWheel={onWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={onMouseMove}
@@ -101,6 +108,19 @@ const WhiteboardCanvas = () => {
       />
       <TextInput />
       <SelectionOverlay onStartResizing={startResizing} />
+      
+      {/* Marquee Visual (The "blue box") */}
+      {selectionState?.type === 'marquee' && (
+        <div 
+          className="absolute border border-[#5B6AF0] bg-[#5B6AF0]/10 pointer-events-none z-30"
+          style={{
+            left: selectionState.x,
+            top: selectionState.y,
+            width: selectionState.width,
+            height: selectionState.height
+          }}
+        />
+      )}
     </div>
   );
 };

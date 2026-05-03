@@ -3,13 +3,14 @@ import useStore from '../store/useStore';
 import { TOOLS } from '../store/constants';
 
 export const useKeyboard = () => {
-  const { 
+    const { 
     setActiveTool, 
     undo, 
     redo, 
     deleteElements, 
     selectedIds, 
     clearSelection,
+    selectAll,
     zoomIn,
     zoomOut,
     resetZoom,
@@ -63,7 +64,7 @@ export const useKeyboard = () => {
             }
             break;
           case 'a':
-            // Logic for select all could be added here if implemented in store
+            selectAll();
             e.preventDefault();
             break;
           case '=': 
@@ -85,5 +86,5 @@ export const useKeyboard = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setActiveTool, undo, redo, deleteElements, selectedIds, clearSelection, zoomIn, zoomOut, resetZoom, isEditingText, duplicateElements]);
+  }, [setActiveTool, undo, redo, deleteElements, selectedIds, clearSelection, selectAll, zoomIn, zoomOut, resetZoom, isEditingText, duplicateElements]);
 };
