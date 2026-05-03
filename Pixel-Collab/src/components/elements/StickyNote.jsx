@@ -1,25 +1,19 @@
-import React, { useState, useEffect } from 'react';
 import useStore from '../../store/useStore';
 import useViewport from '../../hooks/useViewport';
 
 const StickyNote = ({ element }) => {
   const { updateElement, setSelectedIds, selectedIds } = useStore();
   const { toScreen, viewport } = useViewport();
-  const [content, setContent] = useState(element.content || '');
   
   const isSelected = selectedIds.includes(element.id);
   const screenPos = toScreen(element.x, element.y);
 
-  useEffect(() => {
-    setContent(element.content || '');
-  }, [element.content]);
-
   const handleChange = (e) => {
-    setContent(e.target.value);
+    updateElement(element.id, { content: e.target.value });
   };
 
   const handleBlur = () => {
-    updateElement(element.id, { content });
+    // Content is already updated via handleChange
   };
 
   const handleClick = (e) => {
@@ -68,7 +62,7 @@ const StickyNote = ({ element }) => {
       <div style={headerStyle} />
       <textarea
         style={textareaStyle}
-        value={content}
+        value={element.content || ''}
         onChange={handleChange}
         onBlur={handleBlur}
         placeholder="Type something..."

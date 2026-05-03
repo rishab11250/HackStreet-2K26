@@ -36,8 +36,6 @@ const BottomOptions = () => {
 
   if (!showOptions) return null;
 
-  const selectedId = selectedIds[0]; // Logic for single selection for now
-
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white border border-[var(--color-border)] rounded-2xl shadow-2xl p-2 flex items-center gap-3 z-40 animate-in slide-in-from-bottom-4 duration-300">
       
@@ -131,10 +129,10 @@ const BottomOptions = () => {
         <>
           <div className="w-[1px] h-6 bg-gray-100 mx-1" />
           <div className="flex items-center gap-1">
-            <button onClick={() => bringToFront(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring to Front"><ArrowUpToLine size={16} /></button>
-            <button onClick={() => bringForward(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring Forward"><ArrowUp size={16} /></button>
-            <button onClick={() => sendBackward(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Send Backward"><ArrowDown size={16} /></button>
-            <button onClick={() => sendToBack(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Send to Back"><ArrowDownToLine size={16} /></button>
+            <button onClick={() => bringToFront(selectedIds)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring to Front"><ArrowUpToLine size={16} /></button>
+            <button onClick={() => bringForward(selectedIds)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring Forward"><ArrowUp size={16} /></button>
+            <button onClick={() => sendBackward(selectedIds)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Send Backward"><ArrowDown size={16} /></button>
+            <button onClick={() => sendToBack(selectedIds)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Send to Back"><ArrowDownToLine size={16} /></button>
           </div>
           <div className="w-[1px] h-6 bg-gray-100 mx-1" />
           <button 

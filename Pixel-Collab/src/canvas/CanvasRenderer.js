@@ -18,7 +18,7 @@ export const renderAll = (ctx, elements, viewport, liveElement = null) => {
   ctx.translate(x, y);
   ctx.scale(zoom, zoom);
 
-  // Render elements from store
+  // Render elements from store (sorted by z-index if needed, but elements array is our order)
   elements.forEach((el) => {
     drawElement(ctx, el);
   });

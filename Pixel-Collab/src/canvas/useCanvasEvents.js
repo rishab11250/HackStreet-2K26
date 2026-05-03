@@ -6,6 +6,7 @@ import { PencilTool } from '../tools/PencilTool';
 import { ShapeTool } from '../tools/ShapeTool';
 import { TextTool } from '../tools/TextTool';
 import { EraserTool } from '../tools/EraserTool';
+import { SelectTool } from '../tools/SelectTool';
 
 const useCanvasEvents = (containerRef) => {
   const {
@@ -18,8 +19,12 @@ const useCanvasEvents = (containerRef) => {
     fontSize,
     fontWeight,
     elements,
+    selectedIds,
+    setSelectedIds,
+    clearSelection,
     addElement,
     deleteElements,
+    updateElement,
     pushHistory,
     setIsEditingText,
   } = useStore();
@@ -35,6 +40,7 @@ const useCanvasEvents = (containerRef) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [eraserState, setEraserState] = useState(null);
+  const [selectionState, setSelectionState] = useState(null);
   const lastMousePos = useRef({ x: 0, y: 0 });
 
   const onMouseDown = useCallback((e) => {
@@ -58,10 +64,20 @@ const useCanvasEvents = (containerRef) => {
       fontWeight,
       activeShape,
       addElement,
+      setSelectedIds,
+      clearSelection,
+      selectedIds,
+      elements,
       setIsEditingText,
     };
 
     switch (activeTool) {
+      case TOOLS.SELECT: {
+        const state = SelectTool.onMouseDown(e, toolArgs);
+        setSelectionState(state);
+        setIsDrawing(true);
+        break;
+      }
       case TOOLS.PENCIL: {
         const newEl = PencilTool.onMouseDown(e, toolArgs);
         setLiveElement(newEl);
@@ -89,7 +105,8 @@ const useCanvasEvents = (containerRef) => {
     }
   }, [
     activeTool, activeShape, strokeColor, fillColor, strokeWidth, 
-    opacity, fontSize, fontWeight, toCanvas, pushHistory, addElement, setIsEditingText
+    opacity, fontSize, fontWeight, toCanvas, pushHistory, addElement, setIsEditingText,
+    setSelectedIds, clearSelection, elements, selectedIds
   ]);
 
   const onMouseMove = useCallback((e) => {
@@ -109,10 +126,16 @@ const useCanvasEvents = (containerRef) => {
       shiftKey: e.shiftKey,
       elements,
       deleteElements,
-      state: eraserState,
+      setSelectedIds,
+      state: activeTool === TOOLS.ERASER ? eraserState : selectionState,
     };
 
     switch (activeTool) {
+      case TOOLS.SELECT: {
+        const newState = SelectTool.onMouseMove(e, toolArgs);
+        setSelectionState(newState);
+        break;
+      }
       case TOOLS.PENCIL: {
         const updated = PencilTool.onMouseMove(e, toolArgs);
         setLiveElement(updated);
@@ -131,7 +154,7 @@ const useCanvasEvents = (containerRef) => {
       default:
         break;
     }
-  }, [isPanning, isDrawing, activeTool, liveElement, elements, deleteElements, eraserState, handlePan, toCanvas]);
+  }, [isPanning, isDrawing, activeTool, liveElement, elements, deleteElements, eraserState, selectionState, handlePan, toCanvas, setSelectedIds]);
 
   const onMouseUp = useCallback(() => {
     if (isPanning) {
@@ -142,6 +165,11 @@ const useCanvasEvents = (containerRef) => {
     if (!isDrawing) return;
 
     switch (activeTool) {
+      case TOOLS.SELECT: {
+        SelectTool.onMouseUp(selectionState, { pushHistory, updateElement, selectedIds, elements });
+        setSelectionState(null);
+        break;
+      }
       case TOOLS.PENCIL: {
         const finalEl = PencilTool.onMouseUp(liveElement);
         if (finalEl) addElement(finalEl);
@@ -163,7 +191,7 @@ const useCanvasEvents = (containerRef) => {
 
     setLiveElement(null);
     setIsDrawing(false);
-  }, [isPanning, isDrawing, activeTool, liveElement, eraserState, addElement, pushHistory]);
+  }, [isPanning, isDrawing, activeTool, liveElement, eraserState, selectionState, addElement, pushHistory, updateElement, selectedIds, elements]);
 
   const onWheel = useCallback((e) => {
     handleZoom(e, containerRef);
