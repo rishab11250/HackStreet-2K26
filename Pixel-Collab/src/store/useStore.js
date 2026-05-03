@@ -22,6 +22,37 @@ const useStore = create((set, get) => ({
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   clearSelection: () => set({ selectedIds: [] }),
 
+  // Z-ORDER ACTIONS
+  bringForward: (id) => set((state) => {
+    const idx = state.elements.findIndex(el => el.id === id);
+    if (idx === -1 || idx === state.elements.length - 1) return state;
+    const newElements = [...state.elements];
+    [newElements[idx], newElements[idx + 1]] = [newElements[idx + 1], newElements[idx]];
+    return { elements: newElements };
+  }),
+
+  sendBackward: (id) => set((state) => {
+    const idx = state.elements.findIndex(el => el.id === id);
+    if (idx <= 0) return state;
+    const newElements = [...state.elements];
+    [newElements[idx], newElements[idx - 1]] = [newElements[idx - 1], newElements[idx]];
+    return { elements: newElements };
+  }),
+
+  bringToFront: (id) => set((state) => {
+    const element = state.elements.find(el => el.id === id);
+    if (!element) return state;
+    const otherElements = state.elements.filter(el => el.id !== id);
+    return { elements: [...otherElements, element] };
+  }),
+
+  sendToBack: (id) => set((state) => {
+    const element = state.elements.find(el => el.id === id);
+    if (!element) return state;
+    const otherElements = state.elements.filter(el => el.id !== id);
+    return { elements: [element, ...otherElements] };
+  }),
+
   // ACTIVE TOOL
   activeTool: TOOLS.SELECT,
   setActiveTool: (tool) => set({ activeTool: tool }),

@@ -21,10 +21,11 @@ const BottomOptions = () => {
     strokeWidth, setStrokeWidth,
     opacity, setOpacity,
     fontSize, setFontSize,
-    selectedIds, deleteElements
+    selectedIds, deleteElements,
+    bringForward, sendBackward, bringToFront, sendToBack
   } = useStore();
 
-  const [activePicker, setActivePicker] = useState(null); // 'stroke' | 'fill' | null
+  const [activePicker, setActivePicker] = useState(null);
 
   const isTextTool = activeTool === TOOLS.TEXT;
   const isSelectTool = activeTool === TOOLS.SELECT;
@@ -34,6 +35,8 @@ const BottomOptions = () => {
   const showOptions = isDrawingTool || isTextTool || isStickyTool || (isSelectTool && selectedIds.length > 0);
 
   if (!showOptions) return null;
+
+  const selectedId = selectedIds[0]; // Logic for single selection for now
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white border border-[var(--color-border)] rounded-2xl shadow-2xl p-2 flex items-center gap-3 z-40 animate-in slide-in-from-bottom-4 duration-300">
@@ -59,7 +62,7 @@ const BottomOptions = () => {
         )}
       </div>
 
-      {/* Fill Color (not for pencil/text) */}
+      {/* Fill Color */}
       {activeTool !== TOOLS.PENCIL && !isTextTool && (
         <div className="relative">
           <button 
@@ -84,7 +87,7 @@ const BottomOptions = () => {
 
       <div className="w-[1px] h-6 bg-gray-100 mx-1" />
 
-      {/* Stroke Width (not for text/sticky) */}
+      {/* Stroke Width */}
       {!isTextTool && !isStickyTool && (
         <div className="flex items-center gap-3 px-2">
           {[1, 3, 8].map((w) => (
@@ -107,7 +110,7 @@ const BottomOptions = () => {
         </div>
       )}
 
-      {/* Font Size for Text */}
+      {/* Font Size */}
       {isTextTool && (
         <div className="flex items-center gap-2 px-2">
           <Type size={14} className="text-gray-400" />
@@ -123,15 +126,15 @@ const BottomOptions = () => {
         </div>
       )}
 
-      {/* Layer & Delete for Selection */}
+      {/* Z-Order Controls */}
       {isSelectTool && selectedIds.length > 0 && (
         <>
           <div className="w-[1px] h-6 bg-gray-100 mx-1" />
           <div className="flex items-center gap-1">
-            <button className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring to Front"><ArrowUpToLine size={16} /></button>
-            <button className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring Forward"><ArrowUp size={16} /></button>
-            <button className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Send Backward"><ArrowDown size={16} /></button>
-            <button className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Send to Back"><ArrowDownToLine size={16} /></button>
+            <button onClick={() => bringToFront(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring to Front"><ArrowUpToLine size={16} /></button>
+            <button onClick={() => bringForward(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring Forward"><ArrowUp size={16} /></button>
+            <button onClick={() => sendBackward(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Send Backward"><ArrowDown size={16} /></button>
+            <button onClick={() => sendToBack(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Send to Back"><ArrowDownToLine size={16} /></button>
           </div>
           <div className="w-[1px] h-6 bg-gray-100 mx-1" />
           <button 
@@ -144,7 +147,7 @@ const BottomOptions = () => {
         </>
       )}
 
-      {/* Opacity Slider */}
+      {/* Opacity */}
       <div className="w-[1px] h-6 bg-gray-100 mx-1" />
       <div className="flex items-center gap-2 px-2">
         <span className="text-[10px] font-bold text-gray-400 uppercase">Op</span>

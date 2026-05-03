@@ -1,26 +1,16 @@
 import { useEffect } from 'react';
 import useStore from '../store/useStore';
-
-const MOCK_ACTIONS = [
-  'added a sticky note',
-  'drew a shape',
-  'moved an element',
-  'added text',
-  'drew a freehand path',
-  'updated styles',
-  'duplicated selection',
-];
+import { generateMockActivity } from '../utils/mockActivity';
 
 export const useMockCollaboration = () => {
   const { mockUsers, updateMockCursor, addActivityEvent } = useStore();
 
   useEffect(() => {
-    // Cursor movement timers
+    // 1. Cursor movement timers
     const timers = mockUsers.map((user, idx) => {
-      const interval = 900 + (idx * 200); // 900ms, 1100ms, 1300ms
+      const interval = 900 + (idx * 200); 
       
       return setInterval(() => {
-        // 30% chance to stay in place (simulate reading)
         if (Math.random() < 0.3) return;
 
         const canvasWidth = window.innerWidth - 56;
@@ -35,19 +25,11 @@ export const useMockCollaboration = () => {
       }, interval);
     });
 
-    // Activity event timer
+    // 2. Activity event timer using the new utility
     const activityTimer = setInterval(() => {
-      const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
-      const randomAction = MOCK_ACTIONS[Math.floor(Math.random() * MOCK_ACTIONS.length)];
-      
-      addActivityEvent({
-        userId: randomUser.id,
-        userName: randomUser.name,
-        userColor: randomUser.color,
-        action: randomAction,
-        timestamp: Date.now()
-      });
-    }, 12000); // Every 12 seconds
+      const event = generateMockActivity(mockUsers);
+      addActivityEvent(event);
+    }, 12000); 
 
     return () => {
       timers.forEach(t => clearInterval(t));
