@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import useStore from '../store/useStore';
+import { TOOLS } from '../store/constants';
+import { PENCIL_CURSOR, ERASER_CURSOR } from './canvasCursors';
 import GridBackground from './GridBackground';
 import { renderAll } from './CanvasRenderer';
 import useCanvasEvents from './useCanvasEvents';
@@ -9,13 +11,14 @@ import SelectionOverlay from './SelectionOverlay';
 const WhiteboardCanvas = () => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const { elements, viewport, activeTool, isEditingText } = useStore();
-  
+  const { elements, viewport, activeTool } = useStore();
+
   const {
     liveElement,
     onMouseDown,
     onMouseMove,
     onMouseUp,
+    onDoubleClick,
     onWheel,
     isPanning,
     startResizing,
@@ -84,27 +87,38 @@ const WhiteboardCanvas = () => {
     onMouseDown(e);
   };
 
+  const containerCursor =
+    isPanning || spacePressed
+      ? 'grabbing'
+      : activeTool === TOOLS.PAN
+        ? 'grab'
+        : activeTool === TOOLS.SELECT
+          ? 'default'
+          : activeTool === TOOLS.TEXT
+            ? 'text'
+            : activeTool === TOOLS.PENCIL
+              ? PENCIL_CURSOR
+              : activeTool === TOOLS.ERASER
+                ? ERASER_CURSOR
+                : 'crosshair';
+
   return (
     <div 
       ref={containerRef} 
-      className={`relative w-full h-full bg-[#F8F9FB] overflow-hidden ${
-        isPanning || spacePressed 
-          ? 'cursor-grabbing' 
-          : activeTool === 'text' 
-            ? 'cursor-text' 
-            : 'cursor-crosshair'
-      }`}
+      className="relative w-full h-full bg-[#F8F9FB] overflow-hidden"
+      style={{ cursor: containerCursor }}
       onWheel={onWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
+      onDoubleClick={onDoubleClick}
       onMouseLeave={onMouseUp}
     >
       <GridBackground />
       <canvas
         ref={canvasRef}
         className="absolute inset-0 touch-none"
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', cursor: 'inherit' }}
       />
       <TextInput />
       <SelectionOverlay onStartResizing={startResizing} />

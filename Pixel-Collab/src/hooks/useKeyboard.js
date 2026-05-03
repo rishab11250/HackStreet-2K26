@@ -20,9 +20,16 @@ export const useKeyboard = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Don't trigger shortcuts if user is typing
-      const isTyping = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || isEditingText;
-      if (isTyping) return;
+      const t = e.target;
+      const ae = typeof document !== 'undefined' ? document.activeElement : null;
+      const inEditable =
+        t?.tagName === 'INPUT' ||
+        t?.tagName === 'TEXTAREA' ||
+        ae?.tagName === 'TEXTAREA' ||
+        ae?.tagName === 'INPUT' ||
+        t?.isContentEditable ||
+        ae?.isContentEditable;
+      if (inEditable || isEditingText) return;
 
       const ctrl = e.ctrlKey || e.metaKey;
       const shift = e.shiftKey;

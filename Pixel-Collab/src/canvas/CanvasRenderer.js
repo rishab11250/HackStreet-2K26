@@ -163,14 +163,17 @@ const drawArrow = (ctx, el) => {
 };
 
 const drawText = (ctx, el) => {
-  // If no content, we draw a small placeholder or nothing if not editing
-  if (!el.content) return;
+  // Only render real user content (no placeholder strings on canvas)
+  const text = String(el.content ?? '').trim();
+  if (!text) return;
   
   ctx.fillStyle = el.strokeColor;
-  ctx.font = `${el.fontWeight} ${el.fontSize}px Inter, sans-serif`;
+  const style = el.fontStyle || 'normal';
+  const weight = el.fontWeight ?? '400';
+  ctx.font = `${style} ${weight} ${el.fontSize}px Inter, sans-serif`;
   ctx.textBaseline = 'top';
   
-  const lines = el.content.split('\n');
+  const lines = String(el.content).split('\n');
   lines.forEach((line, i) => {
     ctx.fillText(line, el.x, el.y + i * el.fontSize * 1.2);
   });

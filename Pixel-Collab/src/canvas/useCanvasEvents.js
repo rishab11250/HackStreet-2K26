@@ -9,6 +9,7 @@ import { EraserTool } from '../tools/EraserTool';
 import { SelectTool } from '../tools/SelectTool';
 import { StickyNoteTool } from '../tools/StickyNoteTool';
 import { PanTool } from '../tools/PanTool';
+import { isPointInElement } from '../utils/geometry';
 
 const useCanvasEvents = (containerRef) => {
   const {
@@ -20,6 +21,7 @@ const useCanvasEvents = (containerRef) => {
     opacity,
     fontSize,
     fontWeight,
+    fontStyle,
     elements,
     selectedIds,
     setSelectedIds,
@@ -29,7 +31,6 @@ const useCanvasEvents = (containerRef) => {
     updateElement,
     pushHistory,
     setIsEditingText,
-    isEditingText,
     viewport,
     setViewport,
     eraserSize,
@@ -87,8 +88,10 @@ const useCanvasEvents = (containerRef) => {
       opacity,
       fontSize,
       fontWeight,
+      fontStyle,
       activeShape,
       addElement,
+      deleteElements,
       setSelectedIds,
       clearSelection,
       selectedIds,
@@ -144,8 +147,8 @@ const useCanvasEvents = (containerRef) => {
     }
   }, [
     activeTool, activeShape, strokeColor, fillColor, strokeWidth, 
-    opacity, fontSize, fontWeight, toCanvas, pushHistory, addElement, setIsEditingText,
-    setSelectedIds, clearSelection, elements, selectedIds, isEditingText, viewport, setViewport
+    opacity, fontSize, fontWeight, fontStyle, toCanvas, pushHistory, addElement, deleteElements, setIsEditingText,
+    setSelectedIds, clearSelection, elements, selectedIds, viewport, setViewport
   ]);
 
   const onMouseMove = useCallback((e) => {
@@ -340,11 +343,23 @@ const useCanvasEvents = (containerRef) => {
     handleZoom(e, containerRef);
   }, [handleZoom, containerRef]);
 
+  const onDoubleClick = useCallback((e) => {
+    if (e.button !== 0) return;
+    if (activeTool !== TOOLS.SELECT) return;
+    const { x, y } = toCanvas(e.clientX, e.clientY);
+    const hit = [...elements].reverse().find((el) => isPointInElement(x, y, el));
+    if (hit?.type === 'text') {
+      setSelectedIds([hit.id]);
+      setIsEditingText(true, hit.id);
+    }
+  }, [activeTool, elements, toCanvas, setSelectedIds, setIsEditingText]);
+
   return {
     liveElement,
     onMouseDown,
     onMouseMove,
     onMouseUp,
+    onDoubleClick,
     onWheel,
     isPanning,
     startResizing,

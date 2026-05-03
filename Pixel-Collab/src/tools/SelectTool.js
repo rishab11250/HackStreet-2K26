@@ -73,7 +73,9 @@ export const SelectTool = {
   onMouseUp: (state, { pushHistory, updateElement, selectedIds, elements }) => {
     if (!state) return null;
     
-    if (state.type === 'move' && (state.dx !== 0 || state.dy !== 0)) {
+    const dx = state.dx ?? 0;
+    const dy = state.dy ?? 0;
+    if (state.type === 'move' && (dx !== 0 || dy !== 0)) {
       pushHistory();
       // Apply movement to all selected elements
       selectedIds.forEach(id => {
@@ -83,13 +85,13 @@ export const SelectTool = {
             const newPoints = el.points.map(p => [p[0] + state.dx, p[1] + state.dy]);
             const newSmoothPoints = el.smoothPoints?.map(p => [p[0] + state.dx, p[1] + state.dy]);
             updateElement(id, { 
-              x: el.x + state.dx, 
-              y: el.y + state.dy, 
+              x: el.x + dx, 
+              y: el.y + dy, 
               points: newPoints,
               smoothPoints: newSmoothPoints
             });
           } else {
-            updateElement(id, { x: el.x + state.dx, y: el.y + state.dy });
+            updateElement(id, { x: el.x + dx, y: el.y + dy });
           }
         }
       });

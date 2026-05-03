@@ -30,10 +30,14 @@ const BottomOptions = () => {
     strokeWidth, setStrokeWidth,
     opacity, setOpacity,
     fontSize, setFontSize,
+    fontWeight, setFontWeight,
+    fontStyle, setFontStyle,
     eraserSize, setEraserSize,
     selectedIds, deleteElements,
     bringForward, sendBackward, bringToFront, sendToBack,
-    elements, updateElement
+    elements, updateElement,
+    isEditingText,
+    editingElementId,
   } = useStore();
 
   const [activePicker, setActivePicker] = useState(null);
@@ -50,6 +54,52 @@ const BottomOptions = () => {
 
   const selectedId = selectedIds[0];
   const selectedElement = elements.find(el => el.id === selectedId);
+  const isTextFormatting =
+    isTextTool || (isSelectTool && selectedElement?.type === 'text');
+
+  const targetTextElementId =
+    isSelectTool && selectedElement?.type === 'text'
+      ? selectedId
+      : isTextTool && isEditingText && editingElementId
+        ? editingElementId
+        : null;
+
+  const applyTextPatch = (patch) => {
+    if (targetTextElementId) updateElement(targetTextElementId, patch);
+  };
+
+  const editingElement =
+    isTextTool && isEditingText && editingElementId
+      ? elements.find((e) => e.id === editingElementId)
+      : null;
+
+  const displayStrokeColor =
+    isSelectTool && selectedElement?.type === 'text'
+      ? (selectedElement.strokeColor ?? strokeColor)
+      : editingElement
+        ? (editingElement.strokeColor ?? strokeColor)
+        : strokeColor;
+
+  const uiFontSize =
+    isSelectTool && selectedElement?.type === 'text'
+      ? (selectedElement.fontSize ?? fontSize)
+      : editingElement
+        ? (editingElement.fontSize ?? fontSize)
+        : fontSize;
+
+  const uiFontWeight =
+    isSelectTool && selectedElement?.type === 'text'
+      ? String(selectedElement.fontWeight ?? fontWeight)
+      : editingElement
+        ? String(editingElement.fontWeight ?? fontWeight)
+        : String(fontWeight);
+
+  const uiFontStyle =
+    isSelectTool && selectedElement?.type === 'text'
+      ? (selectedElement.fontStyle ?? fontStyle)
+      : editingElement
+        ? (editingElement.fontStyle ?? fontStyle)
+        : fontStyle;
 
   const handleStickyColorChange = (color) => {
     if (isSelectTool && selectedElement?.type === 'sticky') {
@@ -102,16 +152,20 @@ const BottomOptions = () => {
             <button 
               onClick={() => setActivePicker(activePicker === 'stroke' ? null : 'stroke')}
               className="w-8 h-8 rounded-full border-2 border-gray-100 flex items-center justify-center hover:scale-105 transition-transform"
-              style={{ backgroundColor: strokeColor === 'transparent' ? 'white' : strokeColor }}
+              style={{ backgroundColor: displayStrokeColor === 'transparent' ? 'white' : displayStrokeColor }}
               title="Stroke Color"
             >
-              {strokeColor === 'transparent' && <div className="w-full h-[2px] bg-red-500 rotate-45" />}
+              {displayStrokeColor === 'transparent' && <div className="w-full h-[2px] bg-red-500 rotate-45" />}
             </button>
             {activePicker === 'stroke' && (
               <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2">
                 <ColorPicker 
-                  value={strokeColor} 
-                  onChange={(c) => { setStrokeColor(c); setActivePicker(null); }} 
+                  value={displayStrokeColor} 
+                  onChange={(c) => {
+                    setStrokeColor(c);
+                    applyTextPatch({ strokeColor: c });
+                    setActivePicker(null);
+                  }} 
                   label="Stroke Color"
                 />
               </div>
@@ -119,7 +173,7 @@ const BottomOptions = () => {
           </div>
 
           {/* Fill Color */}
-          {activeTool !== TOOLS.PENCIL && !isTextTool && (
+          {activeTool !== TOOLS.PENCIL && !isTextTool && !(isSelectTool && selectedElement?.type === 'text') && (
             <div className="relative">
               <button 
                 onClick={() => setActivePicker(activePicker === 'fill' ? null : 'fill')}
@@ -168,19 +222,49 @@ const BottomOptions = () => {
         </div>
       )}
 
-      {/* Font Size for Text */}
-      {isTextTool && !isEraserTool && (
+      {/* Font size / weight / style for text tool or selected text */}
+      {isTextFormatting && !isEraserTool && (
         <div className="flex items-center gap-2 px-2">
           <Type size={14} className="text-gray-400" />
           <select 
-            value={fontSize}
-            onChange={(e) => setFontSize(parseInt(e.target.value))}
+            value={uiFontSize}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              setFontSize(v);
+              applyTextPatch({ fontSize: v });
+            }}
             className="text-xs font-medium border-none focus:ring-0 cursor-pointer"
           >
             {[12, 16, 20, 24, 32, 48, 64].map(s => <option key={s} value={s}>{s}px</option>)}
           </select>
-          <button className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><Bold size={14} /></button>
-          <button className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><Italic size={14} /></button>
+          <button
+            type="button"
+            title="Bold"
+            onClick={() => {
+              const next = uiFontWeight === '700' ? '400' : '700';
+              setFontWeight(next);
+              applyTextPatch({ fontWeight: next });
+            }}
+            className={`p-1.5 rounded transition-colors ${
+              uiFontWeight === '700' ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]' : 'hover:bg-gray-100 text-gray-600'
+            }`}
+          >
+            <Bold size={14} />
+          </button>
+          <button
+            type="button"
+            title="Italic"
+            onClick={() => {
+              const next = uiFontStyle === 'italic' ? 'normal' : 'italic';
+              setFontStyle(next);
+              applyTextPatch({ fontStyle: next });
+            }}
+            className={`p-1.5 rounded transition-colors ${
+              uiFontStyle === 'italic' ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]' : 'hover:bg-gray-100 text-gray-600'
+            }`}
+          >
+            <Italic size={14} />
+          </button>
         </div>
       )}
 

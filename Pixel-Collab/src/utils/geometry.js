@@ -2,6 +2,18 @@
  * Utility functions for hit testing and bounding box calculations
  */
 
+/** Approximate text width from content (matches canvas fillText line layout ~1.2× fontSize). */
+const estimateTextWidthHeight = (el) => {
+  const fontSize = el.fontSize ?? 16;
+  const lines = String(el.content ?? '').split('\n');
+  const lineHeight = fontSize * 1.2;
+  const charW = fontSize * 0.58;
+  const longest = lines.reduce((m, line) => Math.max(m, line.length), 0);
+  const w = el.width ?? Math.max(longest * charW, fontSize * 2);
+  const h = el.height ?? Math.max(lines.length * lineHeight, lineHeight);
+  return { width: w, height: h };
+};
+
 export const getElementBounds = (el) => {
   if (el.type === 'freehand') {
     const points = el.points;
@@ -26,8 +38,13 @@ export const getElementBounds = (el) => {
       height: maxY - minY
     };
   }
+
+  if (el.type === 'text') {
+    const { width, height } = estimateTextWidthHeight(el);
+    return { x: el.x, y: el.y, width, height };
+  }
   
-  // For shapes, text, sticky notes
+  // For shapes, sticky notes, etc.
   const minX = Math.min(el.x, el.x + (el.width || 0));
   const maxX = Math.max(el.x, el.x + (el.width || 0));
   const minY = Math.min(el.y, el.y + (el.height || 0));

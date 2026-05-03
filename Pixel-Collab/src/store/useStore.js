@@ -102,6 +102,7 @@ const useStore = create((set, get) => ({
   opacity: 1,
   fontSize: 16,
   fontWeight: '400',
+  fontStyle: 'normal',
   recentColors: [],
 
   setStrokeColor: (color) => set({ strokeColor: color }),
@@ -110,6 +111,8 @@ const useStore = create((set, get) => ({
   setEraserSize: (s) => set({ eraserSize: s }),
   setOpacity: (o) => set({ opacity: o }),
   setFontSize: (s) => set({ fontSize: s }),
+  setFontWeight: (w) => set({ fontWeight: w }),
+  setFontStyle: (s) => set({ fontStyle: s }),
   addRecentColor: (color) => set((state) => ({
     recentColors: [color, ...state.recentColors.filter(c => c !== color)].slice(0, 5)
   })),

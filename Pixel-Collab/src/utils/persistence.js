@@ -14,6 +14,7 @@ const KEY_MAP = {
   opacity: 'o',
   fontSize: 'fs',
   fontWeight: 'fw',
+  fontStyle: 'fz',
   content: 'c',
   noteColor: 'nc',
   zIndex: 'z',
