@@ -20,6 +20,7 @@ const TextInput = () => {
   const inputRef = useRef(null);
   const blurTimerRef = useRef(null);
   const ignoreBlurUntilRef = useRef(0);
+  const textCommittedRef = useRef(false);
 
   const fs = element ? (element.fontSize ?? 16) : 16;
   const lineHeightPx = fs * 1.2;
@@ -39,6 +40,7 @@ const TextInput = () => {
     if (!isEditingText || !editingElementId || !element) return;
 
     ignoreBlurUntilRef.current = performance.now() + BLUR_IGNORE_MS;
+    textCommittedRef.current = false;
     clearBlurTimer();
 
     const el = inputRef.current;
@@ -73,7 +75,7 @@ const TextInput = () => {
     el.style.height = `${el.scrollHeight}px`;
     el.style.width = 'auto';
     el.style.width = `${Math.max(200, el.scrollWidth)}px`;
-  }, [isEditingText, element, viewport.x, viewport.y, viewport.zoom, element?.content]);
+  }, [isEditingText, editingElementId, viewport.x, viewport.y, viewport.zoom, element?.content]);
 
   useEffect(() => () => clearBlurTimer(), []);
 
@@ -97,33 +99,18 @@ const TextInput = () => {
     });
   };
 
-  const commitClose = (id) => {
-    if (performance.now() < ignoreBlurUntilRef.current) return;
-    const state = useStore.getState();
-    if (state.editingElementId !== id) return;
-    const el = state.elements.find((e) => e.id === id);
-    if (el && !String(el.content ?? '').trim()) {
-      deleteElements([id]);
-    }
-    setIsEditingText(false, null);
-  };
-
   const handleBlur = () => {
-    if (performance.now() < ignoreBlurUntilRef.current) {
-      clearBlurTimer();
-      return;
+    // Only clear if we are still editing THIS element
+    if (useStore.getState().editingElementId === element.id) {
+      if (!element.content.trim() || element.content === 'New Text') {
+        deleteElements([element.id]);
+      }
+      setIsEditingText(false, null);
     }
-    const id = element.id;
-    clearBlurTimer();
-    blurTimerRef.current = window.setTimeout(() => {
-      blurTimerRef.current = null;
-      if (!inputRef.current) return;
-      commitClose(id);
-    }, BLUR_COMMIT_MS);
   };
 
   const handleFocus = () => {
-    clearBlurTimer();
+    // No-op
   };
 
   const handleKeyDown = (e) => {
@@ -132,17 +119,13 @@ const TextInput = () => {
 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      clearBlurTimer();
-      ignoreBlurUntilRef.current = 0;
-      if (!text) {
+      if (!text || text === 'New Text') {
         deleteElements([element.id]);
       }
       setIsEditingText(false, null);
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      clearBlurTimer();
-      ignoreBlurUntilRef.current = 0;
-      if (!text) {
+      if (!text || text === 'New Text') {
         deleteElements([element.id]);
       }
       setIsEditingText(false, null);
@@ -169,7 +152,7 @@ const TextInput = () => {
           onBlur={handleBlur}
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
-          onMouseDown={stop}
+          onMouseDown={(e) => e.stopPropagation()}
           onMouseUp={stop}
           onClick={stop}
           className="block w-auto min-w-[200px] bg-white outline-none resize-none px-2 py-1 rounded-md selection:bg-[#5B6AF0]/35 placeholder:text-gray-500"

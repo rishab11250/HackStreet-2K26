@@ -7,7 +7,9 @@ import { renderAll } from './CanvasRenderer';
 import useCanvasEvents from './useCanvasEvents';
 import TextInput from '../components/elements/TextInput';
 import SelectionOverlay from './SelectionOverlay';
+import SnapGuideLines from './SnapGuideLines';
 import Minimap from './Minimap';
+import MockCursors from '../components/collaboration/MockCursors';
 
 const WhiteboardCanvas = () => {
   const canvasRef = useRef(null);
@@ -123,6 +125,8 @@ const WhiteboardCanvas = () => {
       />
       <TextInput />
       <SelectionOverlay onStartResizing={startResizing} />
+      <SnapGuideLines guides={selectionState?.peerSnapGuides} />
+      <MockCursors />
       <Minimap containerRef={containerRef} presentationMode={presentationMode} />
       
       {/* Marquee Visual (The "blue box") */}
