@@ -2,12 +2,14 @@ import { Share2, Download, Menu } from 'lucide-react';
 import useStore from '../../store/useStore';
 import AvatarRow from '../collaboration/AvatarRow';
 import ZoomControls from '../ui/ZoomControls';
+import { serializeBoard } from '../../utils/persistence';
 
 const TopBar = () => {
   const { 
     setExportModalOpen, 
     toggleActivityFeed,
-    showActivityFeed 
+    showActivityFeed,
+    elements
   } = useStore();
 
   return (
@@ -34,7 +36,17 @@ const TopBar = () => {
         <div className="h-6 w-[1px] bg-[var(--color-border)] mx-1 hidden sm:block" />
 
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-md text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={async () => {
+              const serialized = await serializeBoard(elements);
+              const url = new URL(window.location.href);
+              url.hash = serialized;
+              
+              navigator.clipboard.writeText(url.toString());
+              alert('Board link copied to clipboard! This link contains your drawing data and can be shared with others.');
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-md text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors active:scale-95"
+          >
             <Share2 size={14} />
             <span className="hidden sm:inline">Share</span>
           </button>
