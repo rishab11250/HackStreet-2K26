@@ -3,23 +3,30 @@ import useStore from '../store/useStore';
 import { TOOLS } from '../store/constants';
 
 export const useKeyboard = () => {
-    const { 
-    setActiveTool, 
-    undo, 
-    redo, 
-    deleteElements, 
-    selectedIds, 
+  const {
+    setActiveTool,
+    undo,
+    redo,
+    deleteElements,
+    selectedIds,
     clearSelection,
     selectAll,
     zoomIn,
     zoomOut,
     resetZoom,
     isEditingText,
-    duplicateElements
+    duplicateElements,
+    togglePresentationMode,
   } = useStore();
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && useStore.getState().presentationMode) {
+        e.preventDefault();
+        useStore.getState().setPresentationMode(false);
+        return;
+      }
+
       const t = e.target;
       const ae = typeof document !== 'undefined' ? document.activeElement : null;
       const inEditable =
@@ -31,37 +38,60 @@ export const useKeyboard = () => {
         ae?.isContentEditable;
       if (inEditable || isEditingText) return;
 
+      if (e.altKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        togglePresentationMode();
+        return;
+      }
+
       const ctrl = e.ctrlKey || e.metaKey;
       const shift = e.shiftKey;
 
-      // TOOL SHORTCUTS
       if (!ctrl && !shift) {
         switch (e.key.toLowerCase()) {
-          case 'v': setActiveTool(TOOLS.SELECT); break;
-          case 'h': setActiveTool(TOOLS.PAN); break;
-          case 'p': setActiveTool(TOOLS.PENCIL); break;
-          case 's': setActiveTool(TOOLS.SHAPE); break;
-          case 't': setActiveTool(TOOLS.TEXT); break;
-          case 'n': setActiveTool(TOOLS.STICKY); break;
-          case 'e': setActiveTool(TOOLS.ERASER); break;
-          case 'escape': clearSelection(); break;
-          case 'delete':
-          case 'backspace': 
-            if (selectedIds.length > 0) deleteElements(selectedIds); 
+          case 'v':
+            setActiveTool(TOOLS.SELECT);
             break;
+          case 'h':
+            setActiveTool(TOOLS.PAN);
+            break;
+          case 'p':
+            setActiveTool(TOOLS.PENCIL);
+            break;
+          case 's':
+            setActiveTool(TOOLS.SHAPE);
+            break;
+          case 't':
+            setActiveTool(TOOLS.TEXT);
+            break;
+          case 'n':
+            setActiveTool(TOOLS.STICKY);
+            break;
+          case 'e':
+            setActiveTool(TOOLS.ERASER);
+            break;
+          case 'escape':
+            clearSelection();
+            break;
+          case 'delete':
+          case 'backspace': {
+            const { selectedIds: ids, elements: els } = useStore.getState();
+            const removable = ids.filter((id) => !els.find((el) => el.id === id)?.locked);
+            if (removable.length > 0) deleteElements(removable);
+            break;
+          }
         }
       }
 
-      // COMMAND SHORTCUTS
       if (ctrl) {
         switch (e.key.toLowerCase()) {
-          case 'z': 
+          case 'z':
             if (shift) redo();
             else undo();
             e.preventDefault();
             break;
-          case 'y': 
-            redo(); 
+          case 'y':
+            redo();
             e.preventDefault();
             break;
           case 'd':
@@ -74,18 +104,18 @@ export const useKeyboard = () => {
             selectAll();
             e.preventDefault();
             break;
-          case '=': 
+          case '=':
           case '+':
-            zoomIn(); 
-            e.preventDefault(); 
+            zoomIn();
+            e.preventDefault();
             break;
-          case '-': 
-            zoomOut(); 
-            e.preventDefault(); 
+          case '-':
+            zoomOut();
+            e.preventDefault();
             break;
-          case '0': 
-            resetZoom(); 
-            e.preventDefault(); 
+          case '0':
+            resetZoom();
+            e.preventDefault();
             break;
         }
       }
@@ -93,5 +123,19 @@ export const useKeyboard = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setActiveTool, undo, redo, deleteElements, selectedIds, clearSelection, selectAll, zoomIn, zoomOut, resetZoom, isEditingText, duplicateElements]);
+  }, [
+    setActiveTool,
+    undo,
+    redo,
+    deleteElements,
+    selectedIds,
+    clearSelection,
+    selectAll,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    isEditingText,
+    duplicateElements,
+    togglePresentationMode,
+  ]);
 };

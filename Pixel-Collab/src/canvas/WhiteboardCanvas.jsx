@@ -7,11 +7,12 @@ import { renderAll } from './CanvasRenderer';
 import useCanvasEvents from './useCanvasEvents';
 import TextInput from '../components/elements/TextInput';
 import SelectionOverlay from './SelectionOverlay';
+import Minimap from './Minimap';
 
 const WhiteboardCanvas = () => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const { elements, viewport, activeTool } = useStore();
+  const { elements, viewport, activeTool, presentationMode } = useStore();
 
   const {
     liveElement,
@@ -105,7 +106,7 @@ const WhiteboardCanvas = () => {
   return (
     <div 
       ref={containerRef} 
-      className="relative w-full h-full bg-[#F8F9FB] overflow-hidden"
+      className="relative w-full h-full bg-[var(--color-canvas-bg)] overflow-hidden transition-colors duration-300"
       style={{ cursor: containerCursor }}
       onWheel={onWheel}
       onMouseDown={handleMouseDown}
@@ -122,6 +123,7 @@ const WhiteboardCanvas = () => {
       />
       <TextInput />
       <SelectionOverlay onStartResizing={startResizing} />
+      <Minimap containerRef={containerRef} presentationMode={presentationMode} />
       
       {/* Marquee Visual (The "blue box") */}
       {selectionState?.type === 'marquee' && (

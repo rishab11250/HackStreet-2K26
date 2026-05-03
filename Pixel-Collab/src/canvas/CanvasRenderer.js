@@ -1,3 +1,24 @@
+import { getElementBounds } from '../utils/geometry';
+
+function drawLockBadge(ctx, el) {
+  const b = getElementBounds(el);
+  const s = Math.max(12, Math.min(Math.max(b.width, b.height), 80) * 0.15);
+  const lx = b.x + b.width - s - 6;
+  const ly = b.y + 6;
+  ctx.save();
+  ctx.fillStyle = 'rgba(91, 106, 240, 0.92)';
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(lx, ly, s, s * 0.85);
+  ctx.strokeRect(lx, ly, s, s * 0.85);
+  ctx.fillStyle = '#fff';
+  ctx.font = `${s * 0.55}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🔒', lx + s / 2, ly + (s * 0.85) / 2);
+  ctx.restore();
+}
+
 /**
  * Pure JS renderer that draws elements onto the canvas context
  */
@@ -57,6 +78,7 @@ const drawElement = (ctx, el) => {
     default:
       break;
   }
+  if (el.locked) drawLockBadge(ctx, el);
   ctx.restore();
 };
 

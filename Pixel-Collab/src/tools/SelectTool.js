@@ -1,4 +1,5 @@
 import { isPointInElement, isElementInBox } from '../utils/geometry';
+import { snapScalar } from '../utils/snap';
 
 export const SelectTool = {
   onMouseDown: (e, { toCanvas, elements, selectedIds, setSelectedIds, clearSelection }) => {
@@ -70,29 +71,34 @@ export const SelectTool = {
     return state;
   },
 
-  onMouseUp: (state, { pushHistory, updateElement, selectedIds, elements }) => {
+  onMouseUp: (state, { pushHistory, updateElement, selectedIds, elements, snapToGrid, gridSnapSize }) => {
     if (!state) return null;
     
     const dx = state.dx ?? 0;
     const dy = state.dy ?? 0;
     if (state.type === 'move' && (dx !== 0 || dy !== 0)) {
       pushHistory();
-      // Apply movement to all selected elements
+      const grid = snapToGrid && gridSnapSize > 0 ? gridSnapSize : 0;
       selectedIds.forEach(id => {
         const el = elements.find(e => e.id === id);
-        if (el) {
-          if (el.type === 'freehand') {
-            const newPoints = el.points.map(p => [p[0] + state.dx, p[1] + state.dy]);
-            const newSmoothPoints = el.smoothPoints?.map(p => [p[0] + state.dx, p[1] + state.dy]);
-            updateElement(id, { 
-              x: el.x + dx, 
-              y: el.y + dy, 
-              points: newPoints,
-              smoothPoints: newSmoothPoints
-            });
-          } else {
-            updateElement(id, { x: el.x + dx, y: el.y + dy });
-          }
+        if (!el || el.locked) return;
+        if (el.type === 'freehand') {
+          const nx = grid ? snapScalar(el.x + dx, grid) : el.x + dx;
+          const ny = grid ? snapScalar(el.y + dy, grid) : el.y + dy;
+          const rdx = nx - el.x;
+          const rdy = ny - el.y;
+          const newPoints = el.points.map(p => [p[0] + rdx, p[1] + rdy]);
+          const newSmoothPoints = el.smoothPoints?.map(p => [p[0] + rdx, p[1] + rdy]);
+          updateElement(id, {
+            x: nx,
+            y: ny,
+            points: newPoints,
+            smoothPoints: newSmoothPoints
+          });
+        } else {
+          const nx = grid ? snapScalar(el.x + dx, grid) : el.x + dx;
+          const ny = grid ? snapScalar(el.y + dy, grid) : el.y + dy;
+          updateElement(id, { x: nx, y: ny });
         }
       });
     }

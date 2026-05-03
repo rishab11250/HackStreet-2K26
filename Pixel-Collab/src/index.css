@@ -4,11 +4,17 @@
   box-sizing: border-box;
 }
 
+html {
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background: #F8F9FB;
+  background: var(--color-canvas-bg);
+  color: var(--color-text-primary);
   overflow: hidden;
   user-select: none;
+  transition: background-color 300ms ease, color 300ms ease;
 }
 
 canvas {
@@ -23,10 +29,32 @@ canvas {
   --color-toolbar-icon: #8B8FA8;
   --color-toolbar-active: #FFFFFF;
   --color-canvas-bg: #F8F9FB;
+  --color-panel-bg: #ffffff;
   --color-border: #E8EAF0;
   --color-text-primary: #1A1B2E;
   --color-text-secondary: #6B7080;
   --color-text-muted: #A0A5B8;
   --color-success: #4CAF7D;
   --color-danger: #F05B5B;
+  --color-minimap-bg: #e8eaf2;
+  --color-minimap-dot: #9aa3b8;
+}
+
+[data-theme="dark"] {
+  --color-primary: #7b86f5;
+  --color-primary-hover: #939cf7;
+  --color-primary-light: #2a2f4a;
+  --color-toolbar-bg: #12131c;
+  --color-toolbar-icon: #9b9fb8;
+  --color-toolbar-active: #ffffff;
+  --color-canvas-bg: #0f1118;
+  --color-panel-bg: #181b26;
+  --color-border: #2a2e3d;
+  --color-text-primary: #e8eaf5;
+  --color-text-secondary: #a8adbf;
+  --color-text-muted: #6d7388;
+  --color-success: #5ccf8f;
+  --color-danger: #ff6b6b;
+  --color-minimap-bg: #1a1e2a;
+  --color-minimap-dot: #4a5168;
 }

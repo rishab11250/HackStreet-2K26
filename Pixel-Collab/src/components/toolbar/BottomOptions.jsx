@@ -7,7 +7,9 @@ import {
   ArrowDownToLine,
   Bold,
   Italic,
-  Type
+  Type,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { TOOLS } from '../../store/constants';
@@ -38,6 +40,12 @@ const BottomOptions = () => {
     elements, updateElement,
     isEditingText,
     editingElementId,
+    presentationMode,
+    snapToGrid,
+    setSnapToGrid,
+    gridSnapSize,
+    setGridSnapSize,
+    toggleLockSelected,
   } = useStore();
 
   const [activePicker, setActivePicker] = useState(null);
@@ -48,8 +56,15 @@ const BottomOptions = () => {
   const isDrawingTool = [TOOLS.PENCIL, TOOLS.SHAPE].includes(activeTool);
   const isEraserTool = activeTool === TOOLS.ERASER;
   
-  const showOptions = isDrawingTool || isTextTool || isStickyTool || isEraserTool || (isSelectTool && selectedIds.length > 0);
+  const showOptions =
+    isDrawingTool ||
+    isTextTool ||
+    isStickyTool ||
+    isEraserTool ||
+    isSelectTool ||
+    activeTool === TOOLS.PAN;
 
+  if (presentationMode) return null;
   if (!showOptions) return null;
 
   const selectedId = selectedIds[0];
@@ -197,7 +212,35 @@ const BottomOptions = () => {
         </>
       )}
 
-      {!isEraserTool && <div className="w-[1px] h-6 bg-gray-100 mx-1" />}
+      {!isEraserTool && (
+        <>
+          <div className="flex items-center gap-2 px-2">
+            <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-text-muted)] cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={snapToGrid}
+                onChange={(e) => setSnapToGrid(e.target.checked)}
+                className="rounded border-gray-300 accent-[var(--color-primary)]"
+              />
+              Snap
+            </label>
+            <input
+              type="range"
+              min={10}
+              max={100}
+              step={5}
+              value={gridSnapSize}
+              onChange={(e) => setGridSnapSize(parseInt(e.target.value, 10))}
+              title="Grid spacing (10–100px). Hold Alt while dragging to bypass snap."
+              className="w-20 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-primary)]"
+            />
+            <span className="text-[10px] font-medium text-[var(--color-text-secondary)] w-9 tabular-nums">
+              {gridSnapSize}px
+            </span>
+          </div>
+          <div className="w-[1px] h-6 bg-gray-100 mx-1" />
+        </>
+      )}
 
       {/* Stroke Width */}
       {!isTextTool && !isStickyTool && !isEraserTool && !(isSelectTool && selectedElement?.type === 'sticky') && (
@@ -272,6 +315,20 @@ const BottomOptions = () => {
       {isSelectTool && selectedIds.length > 0 && !isEraserTool && (
         <>
           <div className="w-[1px] h-6 bg-gray-100 mx-1" />
+          <button
+            type="button"
+            onClick={() => toggleLockSelected()}
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            title="Lock or unlock selected elements"
+            aria-label="Toggle lock on selection"
+          >
+            {selectedIds.length > 0 &&
+            selectedIds.every((id) => elements.find((e) => e.id === id)?.locked) ? (
+              <Unlock size={18} />
+            ) : (
+              <Lock size={18} />
+            )}
+          </button>
           <div className="flex items-center gap-1">
             <button onClick={() => bringToFront(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring to Front"><ArrowUpToLine size={16} /></button>
             <button onClick={() => bringForward(selectedId)} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" title="Bring Forward"><ArrowUp size={16} /></button>
@@ -280,9 +337,12 @@ const BottomOptions = () => {
           </div>
           <div className="w-[1px] h-6 bg-gray-100 mx-1" />
           <button 
-            onClick={() => deleteElements(selectedIds)}
+            onClick={() => {
+              const removable = selectedIds.filter((id) => !elements.find((e) => e.id === id)?.locked);
+              if (removable.length) deleteElements(removable);
+            }}
             className="p-2 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors"
-            title="Delete Selected"
+            title="Delete selected (locked items skipped)"
           >
             <Trash2 size={18} />
           </button>

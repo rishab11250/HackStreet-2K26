@@ -18,6 +18,7 @@ const KEY_MAP = {
   content: 'c',
   noteColor: 'nc',
   zIndex: 'z',
+  locked: 'lk',
 };
 
 const REVERSE_KEY_MAP = Object.fromEntries(

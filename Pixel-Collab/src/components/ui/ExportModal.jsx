@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { X, Image as ImageIcon, FileText, Download, Check } from 'lucide-react';
+import { useState } from 'react';
+import { X, Image as ImageIcon, FileText, Download } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { exportCanvas } from '../../utils/exportCanvas';
 
 const ExportModal = () => {
-  const { isExportModalOpen, setExportModalOpen, elements, viewport } = useStore();
+  const { isExportModalOpen, setExportModalOpen, elements } = useStore();
   const [format, setFormat] = useState('png'); // 'png' | 'pdf'
   const [options, setOptions] = useState({
     includeBackground: true,
